@@ -8,14 +8,15 @@ use crate::{
     traits::BumpAllocatorScope,
 };
 
-/// A bump allocation, returned from one of the `alloc_*` methods of [`BumpAllocator`].
+/// A bump allocation, returned from one of the `alloc_*` methods of [`BumpAllocator`] or [`MutBumpAllocator`].
 ///
-/// This is a temporary type and is meant to be converted using one of its methods.
+/// This type is meant to be immediately turned into
+/// the desired output type using one of its `.into_*()` methods.
 ///
 /// [`BumpAllocator`]: crate::BumpAllocator
+/// [`MutBumpAllocator`]: crate::MutBumpAllocator
 ///
 /// # Examples
-///
 /// ```
 /// use bump_scope::{Bump, BumpAllocator, BoxU};
 ///

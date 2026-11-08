@@ -72,27 +72,14 @@
 //!
 //! The introduction of scopes makes this bump allocator also great for temporary allocations and stack-like usage.
 //!
-//! # Comparison to [`bumpalo`](https://docs.rs/bumpalo)
+//! # Overview
 //!
-//! Bumpalo is a popular crate for bump allocation.
-//! This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html)
-//! (but ignores the title).
-//!
-//! Unlike `bumpalo`, this crate...
+//! - Implements `core`'s `Allocator` and takes an `Allocator`.
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-//! - Drop is always called for allocated values unless explicitly [leaked](BumpAllocation::leak) or [forgotten](core::mem::forget).
-//!   - `alloc*` methods return a [`BumpAllocation`] which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpAllocation::into_ref) and [`into_mut`](BumpAllocation::into_mut).
-//! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
-//! - `Bump`'s base allocator is generic.
-//! - Won't try to allocate a smaller chunk if allocation failed.
-//! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `examples/limit_memory_usage.rs`).
-//! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
-//! - [You can choose the bump direction.](crate::config) Bumps upwards by default.
-//!
-//! # Allocator Methods
-//!
-//! The bump allocator provides many methods to conveniently allocate values, strings, and slices.
-//! Have a look at the documentation of [`Bump`] for a method overview.
+//! - Has helper methods in [`BumpAllocator`] for safely allocating values, slices, strings, collecting iterators, formatting, etc.
+//! - Very fast, see [./crates/callgrind-benches][benches].
+//! - Provides configuration options, to let you optimize the bump allocator for your application.
+//! - Supports parallel bump allocation with a [`BumpPool`].
 //!
 //! # Scopes and Checkpoints
 //!
@@ -194,27 +181,6 @@
 //! // now allocating on `bump` is possible again
 //! vec.reserve(123);
 //! ```
-//!
-//! # Parallel Allocation
-//! [`Bump`] is `!Sync` which means it can't be shared between threads.
-//!
-//! To bump allocate in parallel you can use a [`BumpPool`].
-//!
-//! # Allocator API
-//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
-//! respective [feature flags](#feature-flags) also implement `allocator_api2` version `0.2`,
-//! `0.3`, `0.4` and nightly's `Allocator` trait.
-//!
-//! This allows you to [bump allocate collections](crate::Bump#collections).
-//!
-//! A bump allocator can grow, shrink and deallocate the most recent allocation.
-//! When bumping upwards it can even do so in place.
-//! Growing allocations other than the most recent one will require a new allocation and the old memory block becomes wasted space.
-//! Shrinking or deallocating allocations other than the most recent one does nothing, which means wasted space.
-//!
-//! A bump allocator does not require `deallocate` or `shrink` to free memory.
-//! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can set [the `deallocates` and `shrinks` config parameters](crate::config) to false to make deallocating and shrinking a no-op.
 //!
 //! # Feature Flags
 //! <!-- feature documentation start -->

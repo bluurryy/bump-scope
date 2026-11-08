@@ -27,121 +27,26 @@ use crate::error_mode::panic_on_error;
 /// The bump allocator.
 ///
 /// # Generic parameters
-/// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
 /// - **`C`** — the bump allocator config, see [`config`](crate::config)
+/// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
 ///
-/// # Overview
-/// All of the mentioned methods that do allocations panic if the base allocator returned an error.
-/// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
+/// # Create a `Bump` ...
+/// - with the [`min_chunk_size`]: <code>[new]\([_in][new_in])</code>
+/// - with a size: <code>[with_size]\([_in][with_size_in])</code>
+/// - with a capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
+/// - without allocating a chunk: <code>[const_new]\([_in][const_new_in])</code>
+/// - with `default`, which acts like `const_new` if [`const_constructible`] or `new` if not
 ///
-/// #### Create a `Bump` ...
-/// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
-/// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
-/// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
-/// - const, without allocating a chunk: <code>[const_new]</code>
+/// # Allocate ...
+/// using the `alloc` methods of [`BumpAllocator`], which `Bump` implements.
 ///
-/// [new]: Bump::new
-/// [new_in]: Bump::new_in
-/// [default]: Bump::default
-/// [with_size]: Bump::with_size
-/// [with_size_in]: Bump::with_size_in
-/// [with_capacity]: Bump::with_capacity
-/// [with_capacity_in]: Bump::with_capacity_in
-/// [const_new]: Bump::const_new
-///
-/// #### Allocate ...
-/// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-/// - strings: [`alloc_str`], <code>[alloc_fmt](crate::traits::BumpAllocator::alloc_fmt)([_mut](crate::traits::MutBumpAllocator::mut_alloc_fmt))</code>
-/// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](crate::traits::BumpAllocator::alloc_cstr_fmt)([_mut](crate::traits::MutBumpAllocator::mut_alloc_cstr_fmt))</code>
-/// - slices: <code>alloc_slice_{[copy](crate::traits::BumpAllocator::alloc_slice_copy), [clone](crate::traits::BumpAllocator::alloc_slice_clone), [move](crate::traits::BumpAllocator::alloc_slice_move), [fill](crate::traits::BumpAllocator::alloc_slice_fill), [fill_with](crate::traits::BumpAllocator::alloc_slice_fill_with)}</code>, [`alloc_zeroed_slice`]
-/// - slices from an iterator: [`alloc_iter`], [`mut_alloc_iter`]
-/// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
-///   which can then be conveniently initialized by the `init*` methods of [`extra`](crate::extra).
-/// - results: [`alloc_try_with`], [`mut_alloc_try_with`]
-/// - via clone *(nightly only)*: [`alloc_clone`]
-///
-/// #### Free memory using ...
+/// # Free memory using ...
 /// - scopes: [`scoped`], [`scope_guard`], [`scoped_with_config`]
 /// - checkpoints: [`checkpoint`], [`reset_to`]
 /// - reset: [`reset`], [`reset_to_start`]
 ///
-/// #### Configure allocator config ...
+/// # Change configuration values...
 /// - [`with_config`], [`change_config`], [`ref_change_config`], [`mut_change_config`]
-///
-/// ## Collections
-/// A `Bump` (and [`BumpScope`]) can be used to allocate collections using the [`Allocator`] api.
-///
-/// ```
-/// use bump_scope::Bump;
-///
-/// let bump: Bump = Bump::new();
-/// let boxed = Box::new_in(123, &bump);
-/// let vec = Vec::new_in(&bump);
-/// # let _: Box<i32, _> = boxed;
-/// # let _: Vec<i32, _> = vec;
-/// ```
-///
-/// With the nightly feature `allocator_ext` and `btreemap_alloc` you can allocate more collections from `std`:
-/// ```
-/// # /*
-/// # those features are already been enabled by a `doc(test(attr`
-/// # but we still want it here for demonstration
-/// #![feature(allocator_ext, btreemap_alloc)]
-/// # */
-/// # #[cfg(feature = "nightly")]
-/// # fn main() {
-/// use bump_scope::Bump;
-/// use std::collections::{VecDeque, BTreeMap, LinkedList};
-///
-/// let bump: Bump = Bump::new();
-/// let queue = VecDeque::new_in(&bump);
-/// let map = BTreeMap::new_in(&bump);
-/// let list = LinkedList::new_in(&bump);
-/// # let _: VecDeque<i32, _> = queue;
-/// # let _: BTreeMap<i32, i32, _> = map;
-/// # let _: LinkedList<i32, _> = list;
-/// # }
-/// # #[cfg(not(feature = "nightly"))] fn main() {}
-/// ```
-///
-/// [`alloc`]: crate::traits::BumpAllocator::alloc
-/// [`alloc_with`]: crate::traits::BumpAllocator::alloc_with
-/// [`alloc_default`]: crate::traits::BumpAllocator::alloc_default
-/// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed
-///
-/// [`alloc_str`]: crate::traits::BumpAllocator::alloc_str
-///
-/// [`alloc_cstr`]: crate::traits::BumpAllocator::alloc_cstr
-/// [`alloc_cstr_from_str`]: crate::traits::BumpAllocator::alloc_cstr_from_str
-///
-/// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice
-///
-/// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
-/// [`mut_alloc_iter`]: crate::traits::MutBumpAllocator::mut_alloc_iter
-///
-/// [`alloc_uninit`]: crate::traits::BumpAllocator::alloc_uninit
-/// [`alloc_uninit_slice`]: crate::traits::BumpAllocator::alloc_uninit_slice
-/// [`alloc_uninit_slice_for`]: crate::traits::BumpAllocator::alloc_uninit_slice_for
-///
-/// [`alloc_try_with`]: crate::traits::BumpAllocator::alloc_try_with
-/// [`mut_alloc_try_with`]: crate::traits::MutBumpAllocator::mut_alloc_try_with
-///
-/// [`alloc_clone`]: crate::traits::BumpAllocator::alloc_clone
-///
-/// [`scoped`]: crate::BumpScope::scoped
-/// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
-/// [`scope_guard`]: crate::BumpScope::scope_guard
-///
-/// [`checkpoint`]: crate::traits::BumpAllocator::checkpoint
-/// [`reset_to`]: crate::traits::BumpAllocator::reset_to
-///
-/// [`reset`]: Bump::reset
-/// [`reset_to_start`]: Bump::reset_to_start
-///
-/// [`with_config`]: Bump::with_config
-/// [`change_config`]: Bump::change_config
-/// [`ref_change_config`]: Bump::ref_change_config
-/// [`mut_change_config`]: Bump::ref_change_config
 ///
 /// # Gotcha
 ///
@@ -178,9 +83,38 @@ use crate::error_mode::panic_on_error;
 /// ```
 ///
 /// [`as_mut_bump_scope`]: Bump::as_mut_bump_scope
+/// [`min_chunk_size`]: crate::config::BumpConfigBuilder::min_chunk_size
+/// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
+/// [`BumpAllocator`]: crate::BumpAllocator
+///
+/// [new]: Bump::new
+/// [new_in]: Bump::new_in
+/// [default]: Bump::default
+/// [with_size]: Bump::with_size
+/// [with_size_in]: Bump::with_size_in
+/// [with_capacity]: Bump::with_capacity
+/// [with_capacity_in]: Bump::with_capacity_in
+/// [const_new]: Bump::const_new
+/// [const_new_in]: Bump::const_new_in
+///
+/// [`scoped`]: crate::BumpScope::scoped
+/// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
+/// [`scope_guard`]: crate::BumpScope::scope_guard
+///
+/// [`checkpoint`]: crate::traits::BumpAllocator::checkpoint
+/// [`reset_to`]: crate::traits::BumpAllocator::reset_to
+///
+/// [`reset`]: Bump::reset
+/// [`reset_to_start`]: Bump::reset_to_start
+///
+/// [`with_config`]: Bump::with_config
+/// [`change_config`]: Bump::change_config
+/// [`ref_change_config`]: Bump::ref_change_config
+/// [`mut_change_config`]: Bump::ref_change_config
+///
 #[repr(C)]
 pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    /// Either a chunk allocated from `A`, a [`CLAIMED`] dummy chunk or a [`CONST_CONSTRUCTOR`] dummy chunk.
+    /// Either a chunk allocated from `A`, or a [`CLAIMED`] or [`CONST_CONSTRUCTOR`] dummy chunk.
     ///
     /// [`CLAIMED`]: crate::chunk_types::DummyChunk::CLAIMED
     /// [`CONST_CONSTRUCTOR`]: crate::chunk_types::DummyChunk::CONST_CONSTRUCTOR

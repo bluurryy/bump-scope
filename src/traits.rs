@@ -454,6 +454,43 @@ impl BumpAllocatorPrivate for Unmanaged<'_> {}
 /// A bump allocator.
 ///
 /// Provides methods for [`Bump`] and [`BumpScope`].
+/// All methods that allocate, have a `try_`-prefixed version that returns a `Result` instead of panicking.
+///
+/// #### Allocate ...
+/// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
+/// - strings: [`alloc_str`], <code>([mut_](crate::traits::MutBumpAllocator::mut_alloc_fmt))[alloc_fmt](crate::traits::BumpAllocator::alloc_fmt)</code>
+/// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>([mut_](crate::traits::MutBumpAllocator::mut_alloc_cstr_fmt))[alloc_cstr_fmt](crate::traits::BumpAllocator::alloc_cstr_fmt)</code>
+/// - slices: <code>alloc_slice_{[copy](crate::traits::BumpAllocator::alloc_slice_copy), [clone](crate::traits::BumpAllocator::alloc_slice_clone), [move](crate::traits::BumpAllocator::alloc_slice_move), [fill](crate::traits::BumpAllocator::alloc_slice_fill), [fill_with](crate::traits::BumpAllocator::alloc_slice_fill_with)}</code>, [`alloc_zeroed_slice`]
+/// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`mut_alloc_iter`]
+/// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
+///   which can then be initialized by the `init*` methods of [`extra`](crate::extra).
+/// - results: [`alloc_try_with`], [`mut_alloc_try_with`]
+/// - via clone *(nightly only)*: [`alloc_clone`]
+///
+/// [`alloc`]: crate::traits::BumpAllocator::alloc
+/// [`alloc_with`]: crate::traits::BumpAllocator::alloc_with
+/// [`alloc_default`]: crate::traits::BumpAllocator::alloc_default
+/// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed
+///
+/// [`alloc_str`]: crate::traits::BumpAllocator::alloc_str
+///
+/// [`alloc_cstr`]: crate::traits::BumpAllocator::alloc_cstr
+/// [`alloc_cstr_from_str`]: crate::traits::BumpAllocator::alloc_cstr_from_str
+///
+/// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice
+///
+/// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
+/// [`alloc_iter_exact`]: crate::traits::BumpAllocator::alloc_iter_exact
+/// [`mut_alloc_iter`]: crate::traits::MutBumpAllocator::mut_alloc_iter
+///
+/// [`alloc_uninit`]: crate::traits::BumpAllocator::alloc_uninit
+/// [`alloc_uninit_slice`]: crate::traits::BumpAllocator::alloc_uninit_slice
+/// [`alloc_uninit_slice_for`]: crate::traits::BumpAllocator::alloc_uninit_slice_for
+///
+/// [`alloc_try_with`]: crate::traits::BumpAllocator::alloc_try_with
+/// [`mut_alloc_try_with`]: crate::traits::MutBumpAllocator::mut_alloc_try_with
+///
+/// [`alloc_clone`]: crate::traits::BumpAllocator::alloc_clone
 ///
 /// # Safety
 /// This trait provides additional guarantees on top of [`Allocator`] and laxer safety conditions for its methods:
