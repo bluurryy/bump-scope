@@ -15,7 +15,6 @@ pub(crate) fn likely(condition: bool) -> bool {
 
 /// See [`std::hint::unlikely`].
 #[inline(always)]
-#[expect(unused)]
 pub(crate) fn unlikely(condition: bool) -> bool {
     if condition {
         cold_path();

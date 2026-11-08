@@ -15,6 +15,7 @@ use crate::{
     config::{self, BumpConfig, DEFAULT_BUMP_CONFIG, config},
     error_mode::ErrorMode,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
+    polyfill::hint::unlikely,
     stats::Stats,
     util::{SizedTypeProperties, align_pos, bump_down, up_align_usize_unchecked},
 };
@@ -637,7 +638,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
 
     #[cfg_attr(not(debug_assertions), inline(always))]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        if config!(claimable) && checkpoint.chunk.is_claimed() {
+        if unlikely(config!(claimable) && checkpoint.chunk.is_claimed()) {
             // We do nothing if the checkpoint is claimed.
             // This state is reachable in safe code when a `BumpClaimGuard` is forgotten.
             return;
@@ -651,7 +652,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
         // We don't check if the chunk pointer points to the const constructor chunk if the bump allocator is **not** `const_constructible`.
         // We are allowed to not do this check because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by a `const_constructible` when self is **not** `const_constructible`
-        if config!(const_constructible) && checkpoint.chunk.is_const_constructor() {
+        if unlikely(config!(const_constructible) && checkpoint.chunk.is_const_constructor()) {
             self.reset_to_start();
             return;
         }
