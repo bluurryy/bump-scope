@@ -36,7 +36,7 @@ fn main() -> ExitCode {
 }
 
 fn progress_bar(done: usize, total: usize, message: &str) {
-    let width = 70;
+    let width = 40;
     let filled = done * width / total;
     eprint!("\r\x1b[2K[{}{}] {message}", "█".repeat(filled), " ".repeat(width - filled));
     io::stderr().flush().unwrap();
