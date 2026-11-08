@@ -1,3 +1,6 @@
+//! NB: we mustn't compare the `CLAIMED` or `CONST_CONSTRUCTOR` directly, since there might be multiple instances of the `Header` because
+//! a `const` can be evaluated multiple times. We must compare the `pos` to `CLAIMED_POS` etc. to find out whether it's a claimed chunk.
+
 use core::ptr::NonNull;
 
 use crate::{
