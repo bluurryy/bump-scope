@@ -25,11 +25,11 @@ pub(crate) trait ChunkSize: Copy + fmt::Debug {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ChunkSizeMin;
+pub(crate) struct ChunkSizeDefault;
 
-impl ChunkSize for ChunkSizeMin {
+impl ChunkSize for ChunkSizeDefault {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
-        Some(Constants::<C, A>::MINIMUM_LAYOUT)
+        Some(Constants::<C, A>::DEFAULT_LAYOUT)
     }
 }
 
@@ -45,7 +45,7 @@ impl ChunkSizeHint {
 impl ChunkSize for ChunkSizeHint {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
-        let hint = max(self.0, config!(min_chunk_size));
+        let hint = self.0;
         let size = attempt!(config.calc_size_from_hint(hint)).get();
         let align = AllocatedChunk::<C>::HEADER_LAYOUT.align();
         Layout::from_size_align(size, align).ok()
@@ -69,6 +69,19 @@ impl ChunkSize for ChunkSizeCapacity {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ChunkSizeCapacityFirst(pub(crate) Layout);
+
+impl ChunkSize for ChunkSizeCapacityFirst {
+    fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
+        let config = Constants::<C, A>::CONFIG;
+        let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
+        let size = attempt!(config.calc_size_from_hint(hint)).get();
+        let align = AllocatedChunk::<C>::HEADER_LAYOUT.align();
+        Layout::from_size_align(size, align).ok()
+    }
+}
+
 struct Constants<const C: BumpConfig, A>(PhantomData<fn() -> A>);
 
 impl<const C: BumpConfig, A> Constants<C, A> {
@@ -77,8 +90,8 @@ impl<const C: BumpConfig, A> Constants<C, A> {
         chunk_header_layout: AllocatedChunk::<C>::HEADER_LAYOUT,
     };
 
-    const MINIMUM_LAYOUT: Layout = {
-        let size = match Self::CONFIG.calc_size_from_hint(config!(min_chunk_size)) {
+    const DEFAULT_LAYOUT: Layout = {
+        let size = match Self::CONFIG.calc_size_from_hint(config!(default_chunk_size)) {
             Some(some) => some.get(),
             None => panic!("failed to calculate minimum chunk size"),
         };
@@ -88,8 +101,4 @@ impl<const C: BumpConfig, A> Constants<C, A> {
             Err(_) => panic!("failed to calculate minimum chunk layout"),
         }
     };
-}
-
-const fn max(a: usize, b: usize) -> usize {
-    if a > b { a } else { b }
 }

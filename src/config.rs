@@ -13,7 +13,7 @@
 //!     .claimable(false)
 //!     .deallocates(false)
 //!     .shrinks(false)
-//!     .min_chunk_size(4096)
+//!     .default_chunk_size(4096)
 //!     .build();
 //!
 //! type MyBump = Bump<MY_CONFIG>;
@@ -299,7 +299,7 @@ bit_fields! {
     /// - [`claimable`]\: true
     /// - [`deallocates`]\: true
     /// - [`shrinks`]\: true
-    /// - [`min_chunk_size`]\: 512
+    /// - [`default_chunk_size`]\: 512
     ///
     /// [`min_align`]: BumpConfigBuilder::min_align
     /// [`upwards`]: BumpConfigBuilder::upwards
@@ -307,7 +307,7 @@ bit_fields! {
     /// [`claimable`]: BumpConfigBuilder::claimable
     /// [`deallocates`]: BumpConfigBuilder::deallocates
     /// [`shrinks`]: BumpConfigBuilder::shrinks
-    /// [`min_chunk_size`]: BumpConfigBuilder::min_chunk_size
+    /// [`default_chunk_size`]: BumpConfigBuilder::default_chunk_size
     pub const DEFAULT_BUMP_CONFIG;
 
     /// Sets the alignment the bump pointer maintains when doing allocations.
@@ -414,18 +414,18 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Sets the minimum chunk size.
+    /// Sets the default chunk size.
     ///
-    /// The final chunk size is calculated like described in [`with_size`].
+    /// The size for the chunk layout is calculated like described in [`with_size`].
     ///
     /// [`with_size`]: crate::Bump::with_size
-    min_chunk_size: usize {
+    default_chunk_size: usize {
         default: 512,
         bits: 6,
-        encode: |v| v.highest_one().expect("due to validation, min_chunk_size is not zero") as u128,
+        encode: |v| v.highest_one().expect("due to validation, default_chunk_size is not zero") as u128,
         decode: |v| u128_as_usize(1 << v),
         validate: |v| {
-            assert!(v.is_power_of_two(), "min_chunk_size must be a power of two");
+            assert!(v.is_power_of_two(), "default_chunk_size must be a power of two");
         },
     }
 }
@@ -439,7 +439,7 @@ fn test_roundtrip() {
     for claimable in [false, true] {
     for deallocates in [false, true] {
     for shrinks in [false, true] {
-    for min_chunk_size in (0..(1 << 6)).map(|i| 1 << i) {
+    for default_chunk_size in (0..(1 << 6)).map(|i| 1 << i) {
 
         let config = BumpConfigBuilder::new()
             .min_align(min_align)
@@ -448,7 +448,7 @@ fn test_roundtrip() {
             .claimable(claimable)
             .deallocates(deallocates)
             .shrinks(shrinks)
-            .min_chunk_size(min_chunk_size)
+            .default_chunk_size(default_chunk_size)
             .build();
 
         // std::println!("{config:0128b}");
@@ -460,7 +460,7 @@ fn test_roundtrip() {
         assert_eq!(claimable, read::claimable(config));
         assert_eq!(deallocates, read::deallocates(config));
         assert_eq!(shrinks, read::shrinks(config));
-        assert_eq!(min_chunk_size, read::min_chunk_size(config));
+        assert_eq!(default_chunk_size, read::default_chunk_size(config));
 
     }}}}}}}
 }

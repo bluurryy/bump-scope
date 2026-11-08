@@ -142,7 +142,7 @@ up_and_down! {
 
     #[test]
     fn custom_chunk_size() {
-        const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
+        const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).default_chunk_size(4096).build();
         let bump = Bump::<MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a").into_boxu();

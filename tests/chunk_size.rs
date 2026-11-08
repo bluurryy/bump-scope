@@ -41,33 +41,33 @@ macro_rules! create_mock_allocator {
 }
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
-    const C_MIN_SIZE_1: BumpConfig = BumpConfigBuilder(C).min_chunk_size(1).build();
-    const C_MIN_SIZE_1024: BumpConfig = BumpConfigBuilder(C).min_chunk_size(1024).build();
+    const C_SIZE_1: BumpConfig = BumpConfigBuilder(C).default_chunk_size(1).build();
+    const C_SIZE_1024: BumpConfig = BumpConfigBuilder(C).default_chunk_size(1024).build();
 
     #[test]
     fn zst() {
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(0);
+        let bump = Bump::<C_SIZE_1>::with_size(0);
         assert_eq!(bump.stats().size(), size_of::<[usize; 4]>());
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(512 - 1);
+        let bump = Bump::<C_SIZE_1>::with_size(512 - 1);
         assert_eq!(bump.stats().size(), 512);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(512);
+        let bump = Bump::<C_SIZE_1>::with_size(512);
         assert_eq!(bump.stats().size(), 512);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000 - 1);
+        let bump = Bump::<C_SIZE_1>::with_size(0x1000 - 1);
         assert_eq!(bump.stats().size(), 0x1000);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000);
+        let bump = Bump::<C_SIZE_1>::with_size(0x1000);
         assert_eq!(bump.stats().size(), 0x1000);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000 - 1);
+        let bump = Bump::<C_SIZE_1>::with_size(0x2000 - 1);
         assert_eq!(bump.stats().size(), 0x2000);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000);
+        let bump = Bump::<C_SIZE_1>::with_size(0x2000);
         assert_eq!(bump.stats().size(), 0x2000);
 
-        let bump = Bump::<C_MIN_SIZE_1>::with_capacity(Layout::array::<u8>(0).unwrap());
+        let bump = Bump::<C_SIZE_1>::with_capacity(Layout::array::<u8>(0).unwrap());
         assert_eq!(bump.stats().size(), size_of::<[usize; 4]>());
     }
 
@@ -77,7 +77,7 @@ up_and_down! {
             BigAllocator 32
         }
 
-        let _: Bump<C_MIN_SIZE_1, BigAllocator> = Bump::with_size_in(0x2000, BigAllocator::new());
+        let _: Bump<C_SIZE_1, BigAllocator> = Bump::with_size_in(0x2000, BigAllocator::new());
     }
 
     #[test]
@@ -86,7 +86,7 @@ up_and_down! {
             MyAllocator 4096
         }
 
-        let bump: Bump<C_MIN_SIZE_1, MyAllocator> = Bump::with_size_in(0x2000, MyAllocator::new());
+        let bump: Bump<C_SIZE_1, MyAllocator> = Bump::with_size_in(0x2000, MyAllocator::new());
         assert_eq!(bump.allocated(), 0);
         bump.alloc_str("hey").into_boxu();
         assert_eq!(bump.allocated(), 3);
@@ -94,19 +94,19 @@ up_and_down! {
 
     #[test]
     fn minimum_size() {
-        let bump = Bump::<C_MIN_SIZE_1024>::new();
+        let bump = Bump::<C_SIZE_1024>::new();
         assert_eq!(bump.stats().size(), 1024);
     }
 
     #[test]
     fn minimum_size_smaller_hint() {
-        let bump = Bump::<C_MIN_SIZE_1024>::with_size(0);
-        assert_eq!(bump.stats().size(), 1024);
+        let bump = Bump::<C_SIZE_1024>::with_size(0);
+        assert_eq!(bump.stats().size(), size_of::<[usize;4]>());
     }
 
     #[test]
     fn minimum_size_bigger_hint() {
-        let bump = Bump::<C_MIN_SIZE_1024>::with_size(2048);
+        let bump = Bump::<C_SIZE_1024>::with_size(2048);
         assert_eq!(bump.stats().size(), 2048);
     }
 }

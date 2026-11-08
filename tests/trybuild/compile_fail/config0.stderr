@@ -49,16 +49,16 @@ note: erroneous constant encountered
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |         let size = match Self::CONFIG.calc_size_from_hint(config!(min_chunk_size)) {
+  |         let size = match Self::CONFIG.calc_size_from_hint(config!(default_chunk_size)) {
   |                          ^^^^^^^^^^^^
 
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |         Some(Constants::<C, A>::MINIMUM_LAYOUT)
+  |         Some(Constants::<C, A>::DEFAULT_LAYOUT)
   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeMin as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
+note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeDefault as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
  --> src/chunk_types/allocated_chunk.rs
   |
   |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
@@ -655,27 +655,27 @@ note: the above error was encountered while instantiating `fn bump_scope::chunk_
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |             Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         let config = Constants::<C, A>::CONFIG;
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |         let config = Constants::<C, A>::CONFIG;
-  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
+  |                             ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::chunk_size::ChunkSizeHint as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::chunk_size::ChunkSizeCapacityFirst as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>::{constant#0}` failed inside this call
   |
  ::: src/chunk_size.rs
   |
-  |         let hint = max(self.0, config!(min_chunk_size));
-  |                                ----------------------- in this macro invocation
+  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
+  |                                                                                            --------------------------- in this macro invocation
   |
-note: inside `min_chunk_size`
+note: inside `default_chunk_size`
  --> src/config.rs
   |
   |                       assert_valid_config(config);
@@ -707,16 +707,16 @@ note: erroneous constant encountered
   |
  ::: src/chunk_size.rs
   |
-  |         let hint = max(self.0, config!(min_chunk_size));
-  |                                ----------------------- in this macro invocation
+  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
+  |                                                                                            --------------------------- in this macro invocation
   |
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeHint as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
- --> src/chunk_size.rs
+note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeCapacityFirst as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
+ --> src/chunk_types/allocated_chunk.rs
   |
-  |         self.to_hint::<C, A>()?.layout::<C, A>()
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> src/config.rs
@@ -923,6 +923,18 @@ note: the above error was encountered while instantiating `fn bump_scope::chunk_
   |
   |         let props = self.bump_props(layout);
   |                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> src/chunk_size.rs
+  |
+  |             Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> src/chunk_size.rs
+  |
+  |         let config = Constants::<C, A>::CONFIG;
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> src/config.rs

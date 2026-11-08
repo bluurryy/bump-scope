@@ -10,7 +10,7 @@ use core::{
 use crate::{
     Bump, BumpScope, Checkpoint, Unmanaged, allocator_impl,
     bump_scope::BumpScopeWithoutLifetime,
-    chunk_size::{ChunkSizeCapacity, ChunkSizeMin},
+    chunk_size::{ChunkSizeCapacityFirst, ChunkSizeDefault},
     chunk_types::{AllocatedChunk, Chunk, ChunkKind},
     config::{self, BumpConfig, DEFAULT_BUMP_CONFIG, config},
     error_mode::ErrorMode,
@@ -263,7 +263,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
             ChunkKind::Claimed => Err(E::claimed()),
             ChunkKind::ConstConstructor => {
                 let allocator = self.allocator();
-                let size = ChunkSizeCapacity(*layout);
+                let size = ChunkSizeCapacityFirst(*layout);
                 AllocatedChunk::new_first::<E, A>(size, allocator)
             }
             ChunkKind::Allocated(mut chunk) => {
@@ -716,7 +716,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
                 };
 
                 let allocator = self.allocator();
-                let size = ChunkSizeCapacity(layout);
+                let size = ChunkSizeCapacityFirst(layout);
                 let chunk = AllocatedChunk::new_first::<E, A>(size, allocator)?;
                 self.set_chunk(Chunk::from_allocated(chunk));
                 Ok(())
@@ -759,7 +759,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
             ChunkKind::Claimed => Err(E::claimed()),
             ChunkKind::ConstConstructor => {
                 let allocator = self.allocator();
-                let chunk = Chunk::from_allocated(AllocatedChunk::new_first::<E, A>(ChunkSizeMin, allocator)?);
+                let chunk = Chunk::from_allocated(AllocatedChunk::new_first::<E, A>(ChunkSizeDefault, allocator)?);
                 self.set_chunk(chunk);
                 Ok(())
             }
