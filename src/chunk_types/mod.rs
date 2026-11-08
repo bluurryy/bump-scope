@@ -10,5 +10,5 @@ mod erased_chunk;
 pub(crate) use allocated_chunk::AllocatedChunk;
 pub(crate) use chunk::{Chunk, ChunkKind};
 pub(crate) use dummy_chunk::DummyChunk;
-pub(crate) use dummy_memory_region::{CLAIMED_POS, CONST_CONSTRUCTOR_POS};
+pub(crate) use dummy_memory_region::{CLAIMED_POS, CONST_CONSTRUCTED_POS};
 pub(crate) use erased_chunk::ErasedChunk;

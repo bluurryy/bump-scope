@@ -164,7 +164,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
             );
         }
 
-        // Can't make this bump allocator's chunk be the const constructor chunk
+        // Can't make this bump allocator's chunk be the const constructed chunk
         // from a shared reference so this is enough.
         self.assert_convertible_const_constructible::<NEW_C>();
     }
@@ -261,7 +261,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     {
         let new_chunk: AllocatedChunk<C> = match self.chunk().kind() {
             ChunkKind::Claimed => Err(E::claimed()),
-            ChunkKind::ConstConstructor => {
+            ChunkKind::ConstConstructed => {
                 let allocator = self.allocator();
                 let size = ChunkSizeCapacityFirst(*layout);
                 AllocatedChunk::new_first::<E, A>(size, allocator)
@@ -638,14 +638,14 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
         }
 
         // If the checkpoint was created when the bump allocator had no allocated chunk
-        // then the chunk pointer will point to the const constructor chunk.
+        // then the chunk pointer will point to the const constructed chunk.
         //
         // In such cases we reset the bump pointer to the very start of the very first chunk.
         //
         // We don't check if the chunk pointer points to the const constructor chunk if the bump allocator is **not** `const_constructible`.
         // We are allowed to not do this check because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by a `const_constructible` when self is **not** `const_constructible`
-        if unlikely(config!(const_constructible) && checkpoint.chunk.is_const_constructor()) {
+        if unlikely(config!(const_constructible) && checkpoint.chunk.is_const_constructed()) {
             self.reset_to_start();
             return;
         }
@@ -653,7 +653,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
         #[cfg(debug_assertions)]
         {
             assert!(
-                !checkpoint.chunk.is_const_constructor(),
+                !checkpoint.chunk.is_const_constructed(),
                 "the checkpoint must not have been created by a `const_constructible` when self is not `const_constructible`"
             );
 
@@ -703,7 +703,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
 
         match chunk.kind() {
             ChunkKind::Claimed => Err(E::claimed()),
-            ChunkKind::ConstConstructor => {
+            ChunkKind::ConstConstructed => {
                 let Ok(layout) = Layout::from_size_align(additional, 1) else {
                     return Err(E::capacity_overflow());
                 };
@@ -750,7 +750,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     fn make_allocated<E: ErrorMode>(self) -> Result<(), E> {
         match self.chunk().kind() {
             ChunkKind::Claimed => Err(E::claimed()),
-            ChunkKind::ConstConstructor => {
+            ChunkKind::ConstConstructed => {
                 let allocator = self.allocator();
                 let chunk = Chunk::from_allocated(AllocatedChunk::new_first::<E, A>(ChunkSizeDefault, allocator)?);
                 self.set_chunk(chunk);

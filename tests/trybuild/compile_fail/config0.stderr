@@ -336,7 +336,7 @@ error[E0080]: evaluation panicked: invalid bump config
   |
  ::: src/chunk_types/chunk.rs
   |
-  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTOR_POS
+  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
   |         ---------------------------- in this macro invocation
   |
 note: inside `const_constructible`
@@ -371,7 +371,7 @@ note: erroneous constant encountered
   |
  ::: src/chunk_types/chunk.rs
   |
-  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTOR_POS
+  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
   |         ---------------------------- in this macro invocation
   |
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,10 +1,10 @@
-//! NB: we mustn't compare the `CLAIMED` or `CONST_CONSTRUCTOR` directly, since there might be multiple instances of the `Header` because
+//! NB: we mustn't compare the `CLAIMED` or `CONST_CONSTRUCTED` directly, since there might be multiple instances of the `Header` because
 //! a `const` can be evaluated multiple times. We must compare the `pos` to `CLAIMED_POS` etc. to find out whether it's a claimed chunk.
 
 use core::ptr::NonNull;
 
 use crate::{
-    chunk_types::dummy_memory_region::{CLAIMED_POS, CONST_CONSTRUCTOR_POS},
+    chunk_types::dummy_memory_region::{CLAIMED_POS, CONST_CONSTRUCTED_POS},
     config::{BumpConfig, config},
 };
 
@@ -34,11 +34,11 @@ impl<const C: BumpConfig> DummyChunk<C> {
         }
     };
 
-    pub(crate) const CONST_CONSTRUCTOR: Self = {
+    pub(crate) const CONST_CONSTRUCTED: Self = {
         let static_header: &'static Header = const {
             &Header {
-                pos: CONST_CONSTRUCTOR_POS,
-                end: unsafe { CONST_CONSTRUCTOR_POS.byte_offset(if config!(upwards) { -16 } else { 16 }) },
+                pos: CONST_CONSTRUCTED_POS,
+                end: unsafe { CONST_CONSTRUCTED_POS.byte_offset(if config!(upwards) { -16 } else { 16 }) },
             }
         };
 

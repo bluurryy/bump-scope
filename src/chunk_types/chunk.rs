@@ -2,7 +2,7 @@ use core::{cell::Cell, mem::transmute, ops::Range, ptr::NonNull};
 
 use crate::{
     bumping::{BumpProps, BumpUp, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk_types::{AllocatedChunk, CLAIMED_POS, CONST_CONSTRUCTOR_POS, DummyChunk},
+    chunk_types::{AllocatedChunk, CLAIMED_POS, CONST_CONSTRUCTED_POS, DummyChunk},
     config::{BumpConfig, config},
     layout::LayoutProps,
 };
@@ -21,7 +21,7 @@ pub(crate) struct Chunk<const C: BumpConfig> {
 
 impl<const C: BumpConfig> Chunk<C> {
     pub(crate) const CLAIMED: Self = Self::from_dummy(DummyChunk::CLAIMED);
-    pub(crate) const CONST_CONSTRUCTOR: Self = Self::from_dummy(DummyChunk::CONST_CONSTRUCTOR);
+    pub(crate) const CONST_CONSTRUCTED: Self = Self::from_dummy(DummyChunk::CONST_CONSTRUCTED);
 
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
@@ -44,7 +44,7 @@ impl<const C: BumpConfig> Chunk<C> {
     }
 
     pub(crate) fn is_unallocated(self) -> bool {
-        config!(const_constructible) && self.pos() == CONST_CONSTRUCTOR_POS
+        config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
@@ -54,7 +54,7 @@ impl<const C: BumpConfig> Chunk<C> {
     pub(crate) fn kind(self) -> ChunkKind<C> {
         unsafe {
             if self.is_unallocated() {
-                ChunkKind::ConstConstructor
+                ChunkKind::ConstConstructed
             } else if self.is_claimed() {
                 ChunkKind::Claimed
             } else {
@@ -65,7 +65,7 @@ impl<const C: BumpConfig> Chunk<C> {
 
     pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<C>> {
         match self.kind() {
-            ChunkKind::Claimed | ChunkKind::ConstConstructor => None,
+            ChunkKind::Claimed | ChunkKind::ConstConstructed => None,
             ChunkKind::Allocated(chunk) => Some(chunk),
         }
     }
@@ -199,7 +199,7 @@ impl<const C: BumpConfig> Chunk<C> {
 
 pub(crate) enum ChunkKind<const C: BumpConfig> {
     Claimed,
-    ConstConstructor,
+    ConstConstructed,
     Allocated(AllocatedChunk<C>),
 }
 

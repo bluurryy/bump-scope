@@ -1,7 +1,7 @@
 use core::{cell::Cell, fmt, mem::transmute, ptr::NonNull};
 
 use crate::{
-    chunk_types::{CLAIMED_POS, CONST_CONSTRUCTOR_POS, Chunk},
+    chunk_types::{CLAIMED_POS, CONST_CONSTRUCTED_POS, Chunk},
     config::BumpConfig,
 };
 
@@ -35,8 +35,8 @@ impl ErasedChunk {
         unsafe { self.header.as_ref() }.end
     }
 
-    pub(crate) fn is_const_constructor(self) -> bool {
-        self.pos() == CONST_CONSTRUCTOR_POS
+    pub(crate) fn is_const_constructed(self) -> bool {
+        self.pos() == CONST_CONSTRUCTED_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {

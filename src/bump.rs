@@ -114,10 +114,10 @@ use crate::error_mode::panic_on_error;
 ///
 #[repr(C)]
 pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    /// Either a chunk allocated from `A`, or a [`CLAIMED`] or [`CONST_CONSTRUCTOR`] dummy chunk.
+    /// Either a chunk allocated from `A`, or a [`CLAIMED`] or [`CONST_CONSTRUCTED`] dummy chunk.
     ///
     /// [`CLAIMED`]: crate::chunk_types::DummyChunk::CLAIMED
-    /// [`CONST_CONSTRUCTOR`]: crate::chunk_types::DummyChunk::CONST_CONSTRUCTOR
+    /// [`CONST_CONSTRUCTED`]: crate::chunk_types::DummyChunk::CONST_CONSTRUCTED
     pub(crate) chunk: Cell<Chunk<C>>,
     pub(crate) allocator_ptr: Cell<*const A>,
     pub(crate) allocator: A,
@@ -172,7 +172,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Default for Bump<C, A> {
     fn default() -> Self {
         if config!(const_constructible) {
             Self {
-                chunk: Cell::new(Chunk::CONST_CONSTRUCTOR),
+                chunk: Cell::new(Chunk::CONST_CONSTRUCTED),
                 allocator_ptr: Cell::new(ptr::null()),
                 allocator: A::default(),
             }
@@ -208,7 +208,7 @@ impl<const C: BumpConfig, A: Allocator + GlobalOrSystem> Bump<C, A> {
     pub const fn const_new() -> Self {
         const { assert!(config!(const_constructible)) };
         Self {
-            chunk: Cell::new(Chunk::CONST_CONSTRUCTOR),
+            chunk: Cell::new(Chunk::CONST_CONSTRUCTED),
             allocator_ptr: Cell::new(ptr::null()),
             allocator: A::CONST_DEFAULT,
         }
@@ -236,7 +236,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     pub const fn const_new_in(allocator: A) -> Self {
         const { assert!(config!(const_constructible)) };
         Self {
-            chunk: Cell::new(Chunk::CONST_CONSTRUCTOR),
+            chunk: Cell::new(Chunk::CONST_CONSTRUCTED),
             allocator_ptr: Cell::new(ptr::null()),
             allocator,
         }
