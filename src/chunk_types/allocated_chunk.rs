@@ -33,30 +33,37 @@ pub(crate) struct AllocatedChunk<const C: BumpConfig> {
 impl<const C: BumpConfig> AllocatedChunk<C> {
     pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<C>>();
 
+    #[inline(always)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
 
+    #[inline(always)]
     pub(crate) fn pos(self) -> NonNull<u8> {
         unsafe { self.header.as_ref() }.pos.get()
     }
 
+    #[inline(always)]
     pub(crate) fn end(self) -> NonNull<u8> {
         unsafe { self.header.as_ref() }.end
     }
 
+    #[inline(always)]
     pub(crate) fn prev(self) -> Option<Self> {
         unsafe { self.header.as_ref() }.prev
     }
 
+    #[inline(always)]
     pub(crate) fn next(self) -> Option<Self> {
         unsafe { self.header.as_ref() }.next.get()
     }
 
+    #[inline(always)]
     pub(crate) fn set_pos(self, pos: NonNull<u8>) {
         unsafe { self.header.as_ref() }.pos.set(pos);
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn content_ptr_from_addr(self, addr: usize) -> NonNull<u8> {
         unsafe {
             debug_assert!(self.is_addr_in_content_range(addr));
@@ -66,6 +73,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn content_ptr_from_addr_range(self, range: Range<usize>) -> Range<NonNull<u8>> {
         unsafe {
             debug_assert!(range.start <= range.end);
@@ -75,6 +83,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         unsafe { self.set_pos(self.content_ptr_from_addr(addr)) }
     }
@@ -104,20 +113,24 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         unsafe { self.set_pos_addr(pos) };
     }
 
+    #[inline(always)]
     fn is_addr_in_content_range(self, addr: usize) -> bool {
         let start = self.content_start().addr().get();
         let end = self.content_end().addr().get();
         addr >= start && addr <= end
     }
 
+    #[inline(always)]
     pub(crate) fn mut_clear_prev(mut self) {
         unsafe { self.header.as_mut() }.prev = None;
     }
 
+    #[inline(always)]
     pub(crate) fn set_next(self, next: Option<Self>) {
         unsafe { self.header.as_ref() }.next.set(next);
     }
 
+    #[inline(always)]
     pub(crate) fn layout(self) -> Layout {
         let size = self.size().get();
         let align = Self::HEADER_LAYOUT.align();
@@ -126,10 +139,12 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         unsafe { Layout::from_size_align_unchecked(size, align) }
     }
 
+    #[inline(always)]
     fn after_header(self) -> NonNull<u8> {
         unsafe { self.header.add(1).cast() }
     }
 
+    #[inline(always)]
     pub(crate) fn content_start(self) -> NonNull<u8> {
         if config!(upwards) {
             self.after_header()
@@ -138,6 +153,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn content_end(self) -> NonNull<u8> {
         if config!(upwards) {
             self.chunk_end()
@@ -146,24 +162,28 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn remaining(self) -> usize {
         let start = if config!(upwards) { self.pos() } else { self.content_start() };
         let end = if config!(upwards) { self.content_end() } else { self.pos() };
         end.addr().get() - start.addr().get()
     }
 
+    #[inline(always)]
     pub(crate) fn capacity(self) -> usize {
         let start = self.content_start();
         let end = self.content_end();
         end.addr().get() - start.addr().get()
     }
 
+    #[inline(always)]
     pub(crate) fn allocated(self) -> usize {
         let start = if config!(upwards) { self.content_start() } else { self.pos() };
         let end = if config!(upwards) { self.pos() } else { self.content_end() };
         end.addr().get() - start.addr().get()
     }
 
+    #[inline(always)]
     pub(crate) fn reset(self) {
         if config!(upwards) {
             self.set_pos(self.content_start());
@@ -272,6 +292,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         Ok(new_chunk)
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn from_ptr(header: NonNull<()>) -> Self {
         Self { header: header.cast() }
     }

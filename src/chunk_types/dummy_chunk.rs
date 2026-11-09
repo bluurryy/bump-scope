@@ -46,19 +46,4 @@ impl<const C: BumpConfig> DummyChunk<C> {
             header: NonNull::from_ref(static_header),
         }
     };
-
-    #[expect(dead_code)]
-    pub(crate) fn as_ptr(self) -> NonNull<()> {
-        self.header.cast()
-    }
-
-    #[expect(dead_code)]
-    pub(crate) fn pos(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref() }.pos
-    }
-
-    #[expect(dead_code)]
-    pub(crate) fn end(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref() }.end
-    }
 }

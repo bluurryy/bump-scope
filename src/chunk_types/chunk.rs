@@ -2,7 +2,7 @@ use core::{cell::Cell, mem::transmute, ops::Range, ptr::NonNull};
 
 use crate::{
     bumping::{BumpProps, BumpUp, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk_types::{AllocatedChunk, CLAIMED_POS, CONST_CONSTRUCTED_POS, DummyChunk},
+    chunk_types::{AllocatedChunk, CLAIMED_POS, CONST_CONSTRUCTED_POS, DummyChunk, dummy_memory_region},
     config::{BumpConfig, config},
     layout::LayoutProps,
 };
@@ -23,34 +23,42 @@ impl<const C: BumpConfig> Chunk<C> {
     pub(crate) const CLAIMED: Self = Self::from_dummy(DummyChunk::CLAIMED);
     pub(crate) const CONST_CONSTRUCTED: Self = Self::from_dummy(DummyChunk::CONST_CONSTRUCTED);
 
+    #[inline(always)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
 
+    #[inline(always)]
     pub(crate) fn pos(self) -> NonNull<u8> {
         unsafe { self.header.as_ref() }.pos.get()
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn from_ptr(header: NonNull<()>) -> Self {
         Self { header: header.cast() }
     }
 
+    #[inline(always)]
     pub const fn from_allocated(chunk: AllocatedChunk<C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
+    #[inline(always)]
     pub const fn from_dummy(chunk: DummyChunk<C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
+    #[inline(always)]
     pub(crate) fn is_unallocated(self) -> bool {
         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
     }
 
+    #[inline(always)]
     pub(crate) fn is_claimed(self) -> bool {
         config!(claimable) && self.pos() == CLAIMED_POS
     }
 
+    #[inline(always)]
     pub(crate) fn kind(self) -> ChunkKind<C> {
         unsafe {
             if self.is_unallocated() {
@@ -63,6 +71,7 @@ impl<const C: BumpConfig> Chunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<C>> {
         match self.kind() {
             ChunkKind::Claimed | ChunkKind::ConstConstructed => None,
@@ -70,6 +79,7 @@ impl<const C: BumpConfig> Chunk<C> {
         }
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<C> {
         debug_assert!(matches!(self.kind(), ChunkKind::Allocated(_)));
         unsafe { transmute(self) }
