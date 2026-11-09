@@ -107,6 +107,31 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
         }
     }
 
+    /// # Safety
+    /// The caller must satisfy the the invariants of `reset_to` and
+    /// `checkpoint.chunk.is_dummy()` must be `true`.
+    #[cold]
+    #[inline(never)]
+    unsafe fn reset_to_with_dummy_checkpoint(self, checkpoint: Checkpoint) {
+        debug_assert!(checkpoint.chunk.is_dummy());
+
+        if unlikely(config!(claimable) && checkpoint.chunk.is_claimed()) {
+            // We do nothing if the checkpoint is claimed.
+            // This state is reachable in safe code when a `BumpClaimGuard` is forgotten.
+            return;
+        }
+
+        // Now the chunk must be const constructed, because it is the only dummy chunk
+        // variant other than "claimed".
+        debug_assert!(checkpoint.chunk.is_const_constructed());
+
+        // If the checkpoint was created when the bump allocator had no allocated chunk
+        // then the chunk pointer will point to the const constructed chunk.
+        //
+        // In such cases we reset the bump pointer to the very start of the very first chunk.
+        self.reset_to_start();
+    }
+
     pub(crate) const fn const_assert_upwards_matches<const NEW_C: BumpConfig>() {
         const {
             let old = config!(upwards);
@@ -631,57 +656,33 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
 
     #[cfg_attr(not(debug_assertions), inline(always))]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        if unlikely(config!(claimable) && checkpoint.chunk.is_claimed()) {
-            // We do nothing if the checkpoint is claimed.
-            // This state is reachable in safe code when a `BumpClaimGuard` is forgotten.
-            return;
+        if (config!(claimable) || config!(const_constructible)) && checkpoint.chunk.is_dummy() {
+            return unsafe { self.reset_to_with_dummy_checkpoint(checkpoint) };
         }
 
-        // If the checkpoint was created when the bump allocator had no allocated chunk
-        // then the chunk pointer will point to the const constructed chunk.
-        //
-        // In such cases we reset the bump pointer to the very start of the very first chunk.
-        //
-        // We don't check if the chunk pointer points to the const constructor chunk if the bump allocator is **not** `const_constructible`.
-        // We are allowed to not do this check because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by a `const_constructible` when self is **not** `const_constructible`
-        if unlikely(config!(const_constructible) && checkpoint.chunk.is_const_constructed()) {
-            self.reset_to_start();
-            return;
-        }
-
+        // Check if the checkpoint belongs to this bump allocator.
         #[cfg(debug_assertions)]
-        {
+        if !self.is_claimed() {
+            let chunk = self
+                .stats()
+                .small_to_big()
+                .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
+                .expect("this checkpoint does not refer to any chunk in this bump allocator");
+
+            let start = chunk.content_start().addr().get();
+            let end = chunk.content_end().addr().get();
+            let addr = checkpoint.address.get();
+
             assert!(
-                !checkpoint.chunk.is_const_constructed(),
-                "the checkpoint must not have been created by a `const_constructible` when self is not `const_constructible`"
+                addr >= start && addr <= end,
+                "checkpoint address is not in the chunk's content range"
             );
-
-            if !self.is_claimed() {
-                let chunk = self
-                    .stats()
-                    .small_to_big()
-                    .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
-                    .expect("this checkpoint does not refer to any chunk in this bump allocator");
-
-                let start = chunk.content_start().addr().get();
-                let end = chunk.content_end().addr().get();
-                let addr = checkpoint.address.get();
-
-                assert!(
-                    addr >= start && addr <= end,
-                    "checkpoint address is not in the chunk's content range"
-                );
-            }
         }
 
-        // We handled the const constructor case above.
-        // It can't be a claimed chunk because that would not be allowed due to the safety invariants.
         unsafe {
             // Reset the chunk position of the checkpoint chunk.
             let ptr = checkpoint.chunk.as_ptr().with_addr(checkpoint.address).cast();
             AllocatedChunk::<C>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
-
             self.set_chunk(Chunk::from_ptr(checkpoint.chunk.as_ptr()));
         }
     }

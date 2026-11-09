@@ -49,6 +49,12 @@ impl<const C: BumpConfig> Chunk<C> {
     }
 
     #[inline(always)]
+    #[expect(unused)]
+    pub(crate) fn is_dummy(self) -> bool {
+        dummy_memory_region::is_dummy_pos(self.pos().addr().get())
+    }
+
+    #[inline(always)]
     pub(crate) fn is_unallocated(self) -> bool {
         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
     }

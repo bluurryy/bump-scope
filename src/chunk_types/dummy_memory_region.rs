@@ -1,5 +1,10 @@
 use core::ptr::NonNull;
 
+#[inline(always)]
+pub(crate) fn is_dummy_pos(addr: usize) -> bool {
+    addr & !(align_of::<DummyMemoryRegion>() - 1) == (&raw const DUMMY_MEMORY_REGION).addr()
+}
+
 /// The value for a chunk's position that identifies a "const constructed" chunk.
 pub(crate) const CONST_CONSTRUCTED_POS: NonNull<u8> =
     NonNull::new((&raw const DUMMY_MEMORY_REGION.const_constructed_pos).cast_mut().cast::<u8>()).unwrap();
@@ -17,7 +22,7 @@ impl DummyMemoryRegionSlot {
     }
 }
 
-#[repr(C, align(16))]
+#[repr(C, align(64))]
 struct DummyMemoryRegion {
     start_padding: DummyMemoryRegionSlot,
     const_constructed_pos: DummyMemoryRegionSlot,

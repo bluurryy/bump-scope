@@ -1,7 +1,7 @@
 use core::{cell::Cell, fmt, mem::transmute, ptr::NonNull};
 
 use crate::{
-    chunk_types::{CLAIMED_POS, CONST_CONSTRUCTED_POS, Chunk},
+    chunk_types::{CLAIMED_POS, CONST_CONSTRUCTED_POS, Chunk, dummy_memory_region},
     config::BumpConfig,
 };
 
@@ -22,10 +22,12 @@ impl ErasedChunk {
         header: NonNull::dangling(),
     };
 
+    #[inline(always)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
 
+    #[inline(always)]
     pub(crate) fn pos(self) -> NonNull<u8> {
         unsafe { self.header.as_ref() }.pos.get()
     }
@@ -35,10 +37,17 @@ impl ErasedChunk {
         unsafe { self.header.as_ref() }.end
     }
 
+    #[inline(always)]
+    pub(crate) fn is_dummy(self) -> bool {
+        dummy_memory_region::is_dummy_pos(self.pos().addr().get())
+    }
+
+    #[inline(always)]
     pub(crate) fn is_const_constructed(self) -> bool {
         self.pos() == CONST_CONSTRUCTED_POS
     }
 
+    #[inline(always)]
     pub(crate) fn is_claimed(self) -> bool {
         self.pos() == CLAIMED_POS
     }
