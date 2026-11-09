@@ -36,9 +36,9 @@ where
     E: ErrorMode,
 {
     #[inline]
-    pub(crate) fn from_vec(vec: Vec<T, A>) -> Self {
+    pub(crate) fn new_in(alloc: A) -> Self {
         Self {
-            vec,
+            vec: Vec::new_in(alloc),
             marker: PhantomData,
         }
     }

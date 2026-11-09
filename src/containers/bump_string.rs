@@ -5,7 +5,7 @@
 
 use core::{ffi::CStr, fmt};
 
-use alloc::{boxed::Box, vec::Vec};
+use alloc::boxed::Box;
 
 use crate::{
     bump_allocation::IntoRef, containers::BumpVec, error_mode::ErrorMode, extra::box_from_utf8_unchecked,
@@ -27,12 +27,9 @@ where
     E: ErrorMode,
 {
     #[inline]
-    pub(crate) fn from_vec(mut vec: Vec<u8, A>) -> Self {
-        // no bytes is valid utf8
-        vec.clear();
-
+    pub(crate) fn new_in(alloc: A) -> Self {
         Self {
-            vec: BumpVec::from_vec(vec),
+            vec: BumpVec::new_in(alloc),
         }
     }
 

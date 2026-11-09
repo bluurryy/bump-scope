@@ -214,7 +214,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             return self.imp_alloc_str(string);
         }
 
-        let mut string = BumpString::<_, E>::from_vec(Vec::new_in(self));
+        let mut string = BumpString::<_, E>::new_in(self);
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -268,7 +268,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             return self.imp_alloc_cstr_from_str(string);
         }
 
-        let mut string = BumpString::<_, E>::from_vec(Vec::new_in(self));
+        let mut string = BumpString::<_, E>::new_in(self);
         string.write_fmt(args)?;
         string.into_cstr()
     }
@@ -278,7 +278,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
     where
         E: ErrorMode,
     {
-        let mut vec = BumpVec::<T, _, E>::from_vec(Vec::new_in(self));
+        let mut vec = BumpVec::<T, _, E>::new_in(self);
         vec.extend(iter)?;
         Ok(vec.into_boxed_slice())
     }
