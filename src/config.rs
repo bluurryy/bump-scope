@@ -160,7 +160,7 @@ macro_rules! bit_fields {
             }
 
             bit_fields!(
-                @iter 1;
+                @iter bit_offset = 1;
 
                 $($name: $ty {
                     default: $default,
@@ -215,9 +215,9 @@ macro_rules! bit_fields {
             }
         }
     };
-    (@iter $offset:expr;) => {};
+    (@iter bit_offset = $offset:expr;) => {};
     (@iter
-        $offset:expr;
+        bit_offset = $offset:expr;
         $name:ident: $ty:ty {
             default: $default:expr,
             bits: $bits:literal,
@@ -278,7 +278,7 @@ macro_rules! bit_fields {
         }
 
         bit_fields!(
-            @iter super::$name::OFFSET + super::$name::BITS;
+            @iter bit_offset = super::$name::OFFSET + super::$name::BITS;
             $($rest)*
         );
     };
