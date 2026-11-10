@@ -1,4 +1,4 @@
-/// This trait marks types that don't need dropping.
+/// Marks types that don't need dropping.
 ///
 /// This trait is a best effort for modeling such a constraint.
 /// It is not implemented for all types that don't need dropping.

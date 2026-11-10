@@ -1850,7 +1850,7 @@ unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, C, A> {}
 unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
-/// Exclusive access to a bump allocator.
+/// Provides optimized `alloc` methods that require exclusive access.
 #[expect(private_bounds, clippy::missing_safety_doc)]
 #[cfg_attr(feature = "nightly", doc(notable_trait(color = "red")))]
 pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
