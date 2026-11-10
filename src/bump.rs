@@ -800,12 +800,14 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         (chunk.get().as_ptr(), allocator)
     }
 
-    /// Converts the raw pointer that was created with [`into_raw`](Bump::into_raw) back into a `Bump`.
+    /// Converts the raw pointer that was created with [`into_raw_parts`] back into a `Bump`.
     ///
     /// # Safety
-    /// - `ptr` and `allocator` must come from the same call to `Self::into_raw`.
+    /// - `ptr` and `allocator` must come from the same call to [`into_raw_parts`].
     /// - This function must only be called once with this `ptr`.
     /// - The config must match the original one.
+    ///
+    /// [`into_raw_parts`]: Bump::into_raw_parts
     #[inline]
     #[must_use]
     pub unsafe fn from_raw_parts(ptr: NonNull<()>, allocator: A) -> Self {
