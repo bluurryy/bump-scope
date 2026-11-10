@@ -191,6 +191,11 @@ macro_rules! bit_fields {
         }
 
         $(#[$const_default_attr])*
+        ///
+        /// The configuration values are:
+        $(#[doc = concat!("- [`", stringify!($name), "`]\\: ", $default)])*
+        ///
+        $(#[doc = concat!("[`", stringify!($name), "`]: BumpConfigBuilder::", stringify!($name))])*
         $const_default_vis const $const_default: BumpConfig = BumpConfigBuilder(1u128 << 127)
             $(.$name($default))*
             .build();
@@ -291,23 +296,6 @@ bit_fields! {
     pub mod read;
 
     /// The default bump allocator configuration.
-    ///
-    /// The configuration values are:
-    /// - [`min_align`]\: 1
-    /// - [`upwards`]\: true
-    /// - [`const_constructible`]\: true
-    /// - [`claimable`]\: true
-    /// - [`deallocates`]\: true
-    /// - [`shrinks`]\: true
-    /// - [`default_chunk_size`]\: 512
-    ///
-    /// [`min_align`]: BumpConfigBuilder::min_align
-    /// [`upwards`]: BumpConfigBuilder::upwards
-    /// [`const_constructible`]: BumpConfigBuilder::const_constructible
-    /// [`claimable`]: BumpConfigBuilder::claimable
-    /// [`deallocates`]: BumpConfigBuilder::deallocates
-    /// [`shrinks`]: BumpConfigBuilder::shrinks
-    /// [`default_chunk_size`]: BumpConfigBuilder::default_chunk_size
     pub const DEFAULT_BUMP_CONFIG;
 
     /// Sets the alignment the bump pointer maintains when doing allocations.
