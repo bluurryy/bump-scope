@@ -1,11 +1,10 @@
 [package]
-name = "fuzzing-support"
-version = "0.0.0"
+name = "fuzz_lib"
 edition = "2024"
 
 [dependencies]
 arbitrary = { version = "1.4.2", features = ["derive"] }
-bump-scope = { path = ".." }
+bump-scope = { path = "../.." }
 log = "0.4.34"
 rangemap = "1.8.0"
 zerocopy = { version = "0.8.56", features = ["derive"] }

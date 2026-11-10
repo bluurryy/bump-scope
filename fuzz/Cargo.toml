@@ -79,5 +79,5 @@ test = false
 
 [dependencies]
 env_logger = { version = "0.11.11", default-features = false }
-fuzzing-support = { path = "../fuzzing-support" }
+fuzz_lib = { path = "./fuzz_lib" }
 libfuzzer-sys = "0.4.13"

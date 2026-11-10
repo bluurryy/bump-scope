@@ -2,7 +2,7 @@
 
 use core::{mem, ops::Range};
 
-use fuzzing_support::bump_scope::{extra::vec_split_off, Bump};
+use fuzz_lib::bump_scope::{extra::vec_split_off, Bump};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,

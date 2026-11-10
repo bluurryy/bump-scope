@@ -1,6 +1,6 @@
 #![no_main]
 
-use fuzzing_support::allocator_api::Fuzz;
+use fuzz_lib::allocator_api::Fuzz;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|fuzz: Fuzz| {

@@ -29,7 +29,7 @@ name = "bump-scope-fuzz"
 version = "0.0.0"
 dependencies = [
  "env_logger",
- "fuzzing-support",
+ "fuzz_lib",
  "libfuzzer-sys",
 ]
 
@@ -89,7 +89,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d45db016d36b838f563236e9193d0ee6ce38f3f68b6c94e914b4929c96bbb890"
 
 [[package]]
-name = "fuzzing-support"
+name = "fuzz_lib"
 version = "0.0.0"
 dependencies = [
  "arbitrary",

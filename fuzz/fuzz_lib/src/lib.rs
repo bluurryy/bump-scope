@@ -1,5 +1,4 @@
 #![feature(pointer_is_aligned_to)]
-#![expect(clippy::cargo_common_metadata)]
 
 use std::{
     alloc::{AllocError, Allocator, Layout},

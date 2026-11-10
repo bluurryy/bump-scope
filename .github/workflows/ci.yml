@@ -24,7 +24,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable fmt --all --check
       - run: cd benches && cargo +stable fmt --all --check
-      - run: cd fuzzing-support && cargo +stable fmt --all --check
+      - run: cd fuzz/fuzz_lib && cargo +stable fmt --all --check
       - run: cd tests/test-no-panic && cargo +stable fmt --all --check
       - run: cd fuzz && cargo +stable fmt --all --check
   # FIXME: uncomment once 1.100 has released
@@ -51,7 +51,7 @@ jobs:
       - run: cargo +nightly clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
       - run: cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-      - run: cd fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
+      - run: cd fuzz/fuzz_lib && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd tests/test-no-panic && cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd fuzz && cargo +nightly clippy -- -Dwarnings
   no-panic:
@@ -129,7 +129,7 @@ jobs:
       - run: cargo +nightly run --example limit_memory_usage
       - run: cargo +nightly run --example stack_or_static_memory
       - run: cargo +nightly run --example thread_local
-      - run: cd fuzzing-support && cargo +nightly test
+      - run: cd fuzz/fuzz_lib && cargo +nightly test
   test-miri:
     runs-on: ubuntu-latest
     env:
@@ -145,7 +145,7 @@ jobs:
       - run: cargo +nightly miri run --example limit_memory_usage
       - run: cargo +nightly miri run --example stack_or_static_memory
       - run: cargo +nightly miri run --example thread_local
-      - run: cd fuzzing-support && cargo +nightly miri test
+      - run: cd fuzz/fuzz_lib && cargo +nightly miri test
   doc:
     runs-on: ubuntu-latest
     steps:
