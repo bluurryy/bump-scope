@@ -1,0 +1,11 @@
+[package]
+name = "test-behavior"
+edition = "2024"
+
+[dev-dependencies]
+bump-scope = { path = "../.." }
+expect-test = "1.5.1"
+rayon = "1.11.0"
+
+[features]
+nightly = ["bump-scope/nightly"]

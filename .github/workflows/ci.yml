@@ -111,6 +111,8 @@ jobs:
   #     - uses: dtolnay/rust-toolchain@stable
   #     - uses: Swatinem/rust-cache@v2
   #     - run: cargo +stable test --features bytemuck,zerocopy-08
+  #     - run: cd tests/test-behavior && cargo +stable test
+  #     - run: cd tests/test-trybuild && cargo +stable test
   #     - run: cargo +stable run --example limit_memory_usage
   #     - run: cargo +stable run --example stack_or_static_memory
   #     - run: cargo +stable run --example thread_local
@@ -121,6 +123,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly test --all-features
+      - run: cd tests/test-behavior && cargo +nightly test -F nightly
+      # FIXME: remove once 1.100 has released
+      - run: cd tests/test-trybuild && cargo +nightly test
       - run: cargo +nightly run --example limit_memory_usage
       - run: cargo +nightly run --example stack_or_static_memory
       - run: cargo +nightly run --example thread_local
@@ -136,6 +141,7 @@ jobs:
           components: miri
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly miri test --all-features
+      - run: cd tests/test-behavior && cargo +nightly miri test -F nightly
       - run: cargo +nightly miri run --example limit_memory_usage
       - run: cargo +nightly miri run --example stack_or_static_memory
       - run: cargo +nightly miri run --example thread_local

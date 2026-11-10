@@ -1,0 +1,31 @@
+error[E0277]: `Rc<std::alloc::Global>` cannot be sent between threads safely
+  --> trybuild/compile_fail/base_allocator_unsend.rs:14:24
+   |
+14 |       std::thread::spawn(move || {
+   |  _____------------------_^
+   | |     |
+   | |     required by a bound introduced by this call
+15 | |         drop(bump);
+16 | |     });
+   | |_____^ `Rc<std::alloc::Global>` cannot be sent between threads safely
+   |
+   = help: within `RcAllocator<std::alloc::Global>`, the trait `Send` is not implemented for `Rc<std::alloc::Global>`
+note: required because it appears within the type `RcAllocator<std::alloc::Global>`
+  --> trybuild/compile_fail/base_allocator_unsend.rs:23:5
+   |
+22 | struct RcAllocator<A> {
+23 |     inner: Rc<A>,
+   |     ^^^^^^^^^^^^ required by this field
+   = note: required for `Bump<190848063332306124314266923076813848576, RcAllocator<std::alloc::Global>>` to implement `Send`
+note: required because `bump` is used within this closure
+  --> trybuild/compile_fail/base_allocator_unsend.rs:15:14
+   |
+15 |         drop(bump);
+   |              ^^^^
+note: required by a bound in `spawn`
+  --> $RUST/std/src/thread/functions.rs
+   |
+   | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+...
+   |     F: Send + 'static,
+   |        ^^^^ required by this bound in `spawn`

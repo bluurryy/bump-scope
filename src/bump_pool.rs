@@ -21,6 +21,8 @@ use crate::{
 ///
 /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
 /// ```
+/// # println!("this is actually tested in tests/test-behavior/src/bump_pool_doc.rs");
+/// # /*
 /// use bump_scope::{BumpPool, BumpAllocator};
 /// use rayon::prelude::{ParallelIterator, IntoParallelIterator};
 /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
@@ -41,6 +43,7 @@ use crate::{
 ///
 /// // memory of the strings is freed, trying to access `strings` will result in a lifetime error
 /// // dbg!(&strings);
+/// # */
 /// ```
 ///
 /// Using `BumpPool` with [`std::thread::scope`]:

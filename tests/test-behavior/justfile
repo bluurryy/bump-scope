@@ -1,0 +1,10 @@
+[private]
+@default:
+    just --list
+
+stable:
+    cargo +stable test
+
+[arg("miri", long="miri", value="miri")]
+nightly miri="":
+    cargo +nightly {{ miri }} test -F nightly

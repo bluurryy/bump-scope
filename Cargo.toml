@@ -42,11 +42,6 @@ pre-release-replacements = [
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 
-[dev-dependencies]
-expect-test = "1.5.1"
-rayon = "1.11.0"
-trybuild = "1.0.114"
-
 [features]
 default = ["std", "panic-on-alloc"]
 

@@ -1,0 +1,31 @@
+#![cfg(test)]
+#![cfg_attr(feature = "nightly", feature(allocator_ext, clone_to_uninit, offset_of_enum))]
+mod alloc_clone;
+mod alloc_cstr;
+mod alloc_fmt;
+mod alloc_iter;
+mod alloc_slice;
+mod alloc_try_with;
+mod allocator_api;
+mod append;
+mod bump_allocator;
+mod bump_pool_doc;
+mod bump_vec;
+mod change_config_panics;
+mod chunk_size;
+mod claim;
+mod coerce_unsized;
+mod common;
+mod config;
+mod minimum_chunk_size;
+mod misalignment_due_to_dealloc;
+mod other;
+mod owned_slice;
+mod panic_safety;
+mod pool;
+mod reserve;
+mod split_off;
+mod stats;
+mod unaligned_collection;
+mod unallocated;
+mod vec;

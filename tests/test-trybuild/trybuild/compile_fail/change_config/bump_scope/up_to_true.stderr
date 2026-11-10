@@ -1,0 +1,26 @@
+error[E0080]: evaluation panicked: can't change bump direction
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_imp::BumpImp::<'_, 180214239366026797331036466594571091968, std::alloc::Global, true>::const_assert_upwards_matches::<190848063332306124314266923076813848576>::{constant#0}` failed here
+  |
+ ::: $BUMP_SCOPE/src/bump_imp.rs
+  |
+  |             assert!(old == new, "can't change bump direction");
+  |             -------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/bump_imp.rs
+  |
+  | /         const {
+  | |             let old = config!(upwards);
+  | |             let new = config!(NEW_C, upwards);
+  | |             assert!(old == new, "can't change bump direction");
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn bump_scope::bump_imp::BumpImp::<'_, 180214239366026797331036466594571091968, std::alloc::Global, true>::const_assert_upwards_matches::<190848063332306124314266923076813848576>`
+ --> $BUMP_SCOPE/src/bump_scope.rs
+  |
+  |         BumpImp::<C, A, true>::const_assert_upwards_matches::<NEW_C>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

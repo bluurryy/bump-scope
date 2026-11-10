@@ -1,0 +1,1267 @@
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_size::Constants::<0, std::alloc::Global>::CONFIG::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         up: config!(upwards),
+  |             ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         up: config!(upwards),
+  |             ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         let size = match Self::CONFIG.calc_size_from_hint(config!(default_initial_chunk_size)) {
+  |                          ^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         Some(Constants::<C, A>::DEFAULT_LAYOUT)
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeDefault as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::new_chunk_with_layout::<!, std::alloc::Global>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             if config!(upwards) {
+  |                ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             if config!(upwards) {
+  |                ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::new_chunk_with_layout::<!, std::alloc::Global>`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         Self::new_chunk_with_layout(chunk_layout, None, allocator)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |     Constants::<C, A>::CONFIG.align_size(size)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::layout::ArrayLayout>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let ptr = if config!(upwards) {
+  |                      ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let ptr = if config!(upwards) {
+  |                      ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::layout::ArrayLayout>`
+ --> $BUMP_SCOPE/src/bump_imp.rs
+  |
+  |         match self.chunk().alloc(layout) {
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::ArrayLayout>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let start = if config!(upwards) { pos } else { end };
+  |                        ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::ArrayLayout>::{constant#1}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let end = if config!(upwards) { end } else { pos };
+  |                      ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let start = if config!(upwards) { pos } else { end };
+  |                        ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let end = if config!(upwards) { end } else { pos };
+  |                      ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::ArrayLayout>::{constant#2}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |             min_align: config!(min_align),
+  |                        ------------------ in this macro invocation
+  |
+note: inside `min_align`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |             min_align: config!(min_align),
+  |                        ------------------ in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::ArrayLayout>`
+ --> $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let props = self.bump_props(layout);
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::is_unallocated::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
+  |         ---------------------------- in this macro invocation
+  |
+note: inside `const_constructible`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         config!(const_constructible) && self.pos() == CONST_CONSTRUCTED_POS
+  |         ---------------------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::is_unallocated`
+ --> $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |             if self.is_unallocated() {
+  |                ^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::is_claimed::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         config!(claimable) && self.pos() == CLAIMED_POS
+  |         ------------------ in this macro invocation
+  |
+note: inside `claimable`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         config!(claimable) && self.pos() == CLAIMED_POS
+  |         ------------------ in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::is_claimed`
+ --> $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |             } else if self.is_claimed() {
+  |                       ^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_start::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_start`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         let start = self.content_start().addr().get();
+  |                     ^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_start::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) { self.header.cast() } else { self.end() }
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) { self.header.cast() } else { self.end() }
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_start`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             self.chunk_start()
+  |             ^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_end::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_end`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         let end = self.content_end().addr().get();
+  |                   ^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_end::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) { self.end() } else { self.after_header() }
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) { self.end() } else { self.after_header() }
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_end`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             self.chunk_end()
+  |             ^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         let config = Constants::<C, A>::CONFIG;
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::chunk_size::ChunkSizeCapacityFirst as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                                                                                     ----------------------------------- in this macro invocation
+  |
+note: inside `default_initial_chunk_size`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                                                                                     ----------------------------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn <bump_scope::chunk_size::ChunkSizeCapacityFirst as bump_scope::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>`
+ --> $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::reset::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::reset`
+ --> $BUMP_SCOPE/src/bump_imp.rs
+  |
+  |                     chunk.reset();
+  |                     ^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::layout::CustomLayout>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let ptr = if config!(upwards) {
+  |                      ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::layout::CustomLayout>`
+ --> $RUST/core/src/ops/function.rs
+  |
+  |     extern "rust-call" fn call_mut(&mut self, args: Args) -> Self::Output;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::CustomLayout>::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let start = if config!(upwards) { pos } else { end };
+  |                        ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::CustomLayout>::{constant#1}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let end = if config!(upwards) { end } else { pos };
+  |                      ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::CustomLayout>::{constant#2}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |             min_align: config!(min_align),
+  |                        ------------------ in this macro invocation
+  |
+note: inside `min_align`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::layout::CustomLayout>`
+ --> $BUMP_SCOPE/src/chunk_types/chunk.rs
+  |
+  |         let props = self.bump_props(layout);
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |             Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/chunk_size.rs
+  |
+  |         let config = Constants::<C, A>::CONFIG;
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |                 -------------------- in this macro invocation
+  |
+note: inside `deallocates`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |                 -------------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate::<0, std::alloc::Global, false>`
+ --> $BUMP_SCOPE/src/bump_imp.rs
+  |
+  |         unsafe { allocator_impl::deallocate(*self, ptr, layout) };
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::is_last::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { config!(upwards) } {
+  |                ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { config!(upwards) } {
+  |                ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { config!(upwards) } {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::is_last::<0, std::alloc::Global, false>`
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |         if is_last(bump, ptr, layout) {
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |                 -------------------- in this macro invocation
+  |
+note: inside `deallocates`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |                 -------------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>::{constant#1}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |     if const { !config!(deallocates) } {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |         if config!(upwards) {
+  |            ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>`
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |             deallocate_assume_last(bump, ptr, layout);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#0}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             let addr = align_pos(config!(upwards), config!(min_align), pos);
+  |                                  ---------------- in this macro invocation
+  |
+note: inside `upwards`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             let addr = align_pos(config!(upwards), config!(min_align), pos);
+  |                                  ---------------- in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0080]: evaluation panicked: invalid bump config
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#1}` failed inside this call
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             let addr = align_pos(config!(upwards), config!(min_align), pos);
+  |                                                    ------------------ in this macro invocation
+  |
+note: inside `min_align`
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |                       assert_valid_config(config);
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / bit_fields! {
+  | |     mod fields;
+  | |
+  | |     /// Read configuration parameters.
+... |
+  | | }
+  | |_- in this macro invocation
+note: inside `config::assert_valid_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $BUMP_SCOPE/src/config.rs
+  |
+  |     assert!((config & (1u128 << 127)) != 0, "invalid bump config");
+  |     -------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> $BUMP_SCOPE/src/config.rs
+  |
+  |         const { $crate::config::read::$name(C) }
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $BUMP_SCOPE/src/chunk_types/allocated_chunk.rs
+  |
+  |             let addr = align_pos(config!(upwards), config!(min_align), pos);
+  |                                                    ------------------ in this macro invocation
+  |
+  = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align`
+ --> $BUMP_SCOPE/src/allocator_impl.rs
+  |
+  |             chunk.set_pos_addr_and_align(ptr.addr().get());
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

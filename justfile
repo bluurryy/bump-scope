@@ -53,7 +53,6 @@ check:
     just check-clippy
     just check-msrv
     just check-no-std
-    just check-no-panic
 
 # Checks formatting.
 [group('check')]
@@ -110,17 +109,13 @@ check-no-std:
     # cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
     cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,nightly
 
-# Asserts that api that shouldn't panic, doesn't.
-[group('check')]
-check-no-panic:
-    just crates/test-no-panic/test
-
 # Runs all `test-*`.
 [group('test')]
 test:
     just test-stable
     just test-nightly
     just test-nightly --miri
+    just test-no-panic
 
 # Runs tests for the stable toolchain.
 [group('test')]
@@ -130,8 +125,8 @@ test-stable:
     # cargo +stable run --example limit_memory_usage
     # cargo +stable run --example stack_or_static_memory
     # cargo +stable run --example thread_local
-    # cargo +stable test --test trybuild -- --ignored
-    # cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
+    # just tests/test-behavior/stable
+    # just tests/test-trybuild/test
 
 # Runs tests for the nightly toolchain, optionally with miri.
 [arg("miri", long="miri", value="miri")]
@@ -142,16 +137,19 @@ test-nightly miri="":
     cargo +nightly {{ miri }} run --example stack_or_static_memory
     cargo +nightly {{ miri }} run --example thread_local
     cd crates/fuzzing-support && cargo +nightly {{ miri }} test
+    just tests/test-behavior/nightly --{{ miri }}
     # FIXME: remove once 1.100 has released
-    cargo +nightly test --test trybuild -- --ignored
-    cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
+    just tests/test-trybuild/test
+
+# Checks that the `try_` api doesn't panic.
+[group('test')]
+test-no-panic:
+    just crates/test-no-panic/test
 
 # Update the expected compile errors of `trybuild` tests.
 [group('test')]
 trybuild-overwrite:
-    # FIXME: replace +nightly with +stable once 1.100 has released
-    TRYBUILD=overwrite cargo +nightly test --test trybuild -- --ignored
-    TRYBUILD=overwrite cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
+    just tests/test-trybuild/overwrite
 
 # Fuzz for `seconds`.
 [group('fuzz')]

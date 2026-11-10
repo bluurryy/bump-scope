@@ -1,0 +1,7 @@
+test:
+    # FIXME: replace +nightly with +stable once 1.100 has released
+    cargo +nightly test
+
+overwrite:
+    # FIXME: replace +nightly with +stable once 1.100 has released
+    TRYBUILD=overwrite cargo +nightly test

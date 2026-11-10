@@ -1,0 +1,7 @@
+[package]
+name = "test-trybuild"
+edition = "2024"
+
+[dev-dependencies]
+bump-scope = { path = "../.." }
+trybuild = "1.0.114"
