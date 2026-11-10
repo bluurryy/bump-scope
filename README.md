@@ -174,6 +174,10 @@ vec.reserve(123);
   - Promises symbolic alignment to miri for bump allocations
 <!-- feature documentation end -->
 
+## MSRV policy
+The minimum supported rust version may increase in a minor release.
+It currently is <!--msrv start-->LOL<!--msrv end-->.
+
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 [`Allocator`]: https://doc.rust-lang.org/core/alloc/trait.Allocator.html

@@ -208,6 +208,10 @@
 //!   - Promises symbolic alignment to miri for bump allocations
 //! <!-- feature documentation end -->
 //!
+//! # MSRV policy
+//! The minimum supported rust version may increase with a minor release.
+//! It's currently **<!--msrv start-->1.100.0<!--msrv end-->**.
+//!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [`new`]: Bump::new
 //! [`Allocator`]: core::alloc::Allocator
