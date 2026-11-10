@@ -3,8 +3,8 @@ name = "fuzz_lib"
 edition = "2024"
 
 [dependencies]
-arbitrary = { version = "1.4.2", features = ["derive"] }
+arbitrary = { version = "1.5.0", features = ["derive"] }
 bump-scope = { path = "../.." }
-log = "0.4.34"
+log = "0.4.35"
 rangemap = "1.8.0"
-zerocopy = { version = "0.8.56", features = ["derive"] }
+zerocopy = { version = "0.8.63", features = ["derive"] }

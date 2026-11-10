@@ -4,4 +4,4 @@ edition = "2024"
 
 [dev-dependencies]
 bump-scope = { path = "../.." }
-trybuild = "1.0.114"
+trybuild = "1.0.122"
