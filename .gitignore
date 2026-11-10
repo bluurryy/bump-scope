@@ -1,5 +1,3 @@
 target
 /.vscode/**
-!/.vscode/cspell.json
 /rustc-ice-*
-/crates/test-no-panic/out
