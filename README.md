@@ -3,9 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/bump-scope.svg)](https://crates.io/crates/bump-scope)
 [![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
 [![Changelog](https://img.shields.io/badge/Changelog-.md-8c3e8c)](CHANGELOG.md)
-[![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
+<a>![MSRV](https://img.shields.io/crates/msrv/bump-scope)</a>
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
-![handmade](https://img.shields.io/badge/handmade-4b0)
+<a>![handmade](https://img.shields.io/badge/handmade-4b0)</a>
 
 > [!WARNING]  
 > This is the **in-development version 3.0.0**, which contains breaking changes and is not yet released. 
