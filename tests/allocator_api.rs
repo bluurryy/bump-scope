@@ -223,7 +223,7 @@ up_and_down! {
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn shrink() {
-        let base = DisaligningAllocator::new(4096, Global);
+        let base = DisaligningAllocator::new(8192, Global);
         let bump: Bump<C, _> = Bump::new_in(&base);
 
         unsafe {
@@ -290,7 +290,7 @@ up_and_down! {
             assert_eq!(bump.stats().count(), 1);
 
             // shrink out of place (same size)
-            let new_layout = Layout::from_size_align(9, 1024).unwrap();
+            let new_layout = Layout::from_size_align(9, 2048).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
             assert_eq!(bump.stats().count(), 2);
             dbg!(&bump);
@@ -302,13 +302,13 @@ up_and_down! {
 
                 chunks[0].capacity()
                     + if config::read::upwards(C) {
-                        let padding_until_aligned = 1024 - disalignment_offset - header_size;
+                        let padding_until_aligned = 2048 - disalignment_offset - header_size;
                         padding_until_aligned + 9
                     } else {
-                        chunks[1].capacity() - (1024 - disalignment_offset)
+                        chunks[1].capacity() - (2048 - disalignment_offset)
                     }
             });
-            assert_eq!(new_ptr.cast::<u8>().addr().get() % 1024, 0);
+            assert_eq!(new_ptr.cast::<u8>().addr().get() % 2048, 0);
             assert_ne!(old_ptr.addr(), new_ptr.addr());
         }
     }

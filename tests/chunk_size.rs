@@ -41,8 +41,8 @@ macro_rules! create_mock_allocator {
 }
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
-    const C_SIZE_1: BumpConfig = BumpConfigBuilder(C).default_chunk_size(1).build();
-    const C_SIZE_1024: BumpConfig = BumpConfigBuilder(C).default_chunk_size(1024).build();
+    const C_SIZE_1: BumpConfig = BumpConfigBuilder(C).default_initial_chunk_size(1).build();
+    const C_SIZE_1024: BumpConfig = BumpConfigBuilder(C).default_initial_chunk_size(1024).build();
 
     #[test]
     fn zst() {

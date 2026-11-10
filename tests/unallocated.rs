@@ -129,20 +129,20 @@ up_and_down! {
     }
 
     #[test]
-    fn default_chunk_size() {
+    fn default_initial_chunk_size() {
         let bump = Bump::<C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),
-            512
+            1024
         );
     }
 
     #[test]
     fn custom_chunk_size() {
-        const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).default_chunk_size(4096).build();
+        const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).default_initial_chunk_size(4096).build();
         let bump = Bump::<MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a").into_boxu();

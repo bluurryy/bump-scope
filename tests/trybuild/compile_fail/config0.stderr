@@ -49,7 +49,7 @@ note: erroneous constant encountered
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |         let size = match Self::CONFIG.calc_size_from_hint(config!(default_chunk_size)) {
+  |         let size = match Self::CONFIG.calc_size_from_hint(config!(default_initial_chunk_size)) {
   |                          ^^^^^^^^^^^^
 
 note: erroneous constant encountered
@@ -661,8 +661,8 @@ note: erroneous constant encountered
 note: erroneous constant encountered
  --> src/chunk_size.rs
   |
-  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
-  |                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> src/config.rs
@@ -672,10 +672,10 @@ error[E0080]: evaluation panicked: invalid bump config
   |
  ::: src/chunk_size.rs
   |
-  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
-  |                                                                                            --------------------------- in this macro invocation
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                                                                                     ----------------------------------- in this macro invocation
   |
-note: inside `default_chunk_size`
+note: inside `default_initial_chunk_size`
  --> src/config.rs
   |
   |                       assert_valid_config(config);
@@ -707,8 +707,8 @@ note: erroneous constant encountered
   |
  ::: src/chunk_size.rs
   |
-  |         let hint = attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_chunk_size));
-  |                                                                                            --------------------------- in this macro invocation
+  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |                                                                                     ----------------------------------- in this macro invocation
   |
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 

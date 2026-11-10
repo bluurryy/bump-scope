@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: can't change `const_constructible` using `Bum
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_, 185520766755449391167394633843034030080>::with_config::<190837678738589054659009862084155408384, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/enable_const_constructible.rs:11:34: 11:37}>::{constant#1}` failed here
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_, 185531151349166460822651694835692470272>::with_config::<190848063332306124314266923076813848576, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/enable_const_constructible.rs:11:34: 11:37}>::{constant#1}` failed here
   |
  ::: src/bump_scope.rs
   |
@@ -24,7 +24,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn BumpScope::<'_, 185520766755449391167394633843034030080>::with_config::<190837678738589054659009862084155408384, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/enable_const_constructible.rs:11:34: 11:37}>`
+note: the above error was encountered while instantiating `fn BumpScope::<'_, 185531151349166460822651694835692470272>::with_config::<190848063332306124314266923076813848576, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/enable_const_constructible.rs:11:34: 11:37}>`
  --> src/bump.rs
   |
   |         self.as_mut_bump_scope().with_config(f)

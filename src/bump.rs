@@ -31,7 +31,7 @@ use crate::error_mode::panic_on_error;
 /// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
 ///
 /// # Create a `Bump` ...
-/// - with the [`default_chunk_size`]: <code>[new]\([_in][new_in])</code>
+/// - with the [`default_initial_chunk_size`]: <code>[new]\([_in][new_in])</code>
 /// - with a size: <code>[with_size]\([_in][with_size_in])</code>
 /// - with a capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
 /// - without allocating a chunk: <code>[const_new]\([_in][const_new_in])</code>
@@ -83,7 +83,7 @@ use crate::error_mode::panic_on_error;
 /// ```
 ///
 /// [`as_mut_bump_scope`]: Bump::as_mut_bump_scope
-/// [`default_chunk_size`]: crate::config::BumpConfigBuilder::default_chunk_size
+/// [`default_initial_chunk_size`]: crate::config::BumpConfigBuilder::default_initial_chunk_size
 /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
 /// [`BumpAllocator`]: crate::BumpAllocator
 ///
@@ -247,7 +247,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
 impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size][]([default_chunk_size])</code>.
+    /// This is equivalent to <code>[with_size][]([default_initial_chunk_size])</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -261,7 +261,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// ```
     ///
     /// [with_size]: Bump::with_size
-    /// [default_chunk_size]: crate::config::BumpConfigBuilder::default_chunk_size
+    /// [default_initial_chunk_size]: crate::config::BumpConfigBuilder::default_initial_chunk_size
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -271,7 +271,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size][]([default_chunk_size])</code>.
+    /// This is equivalent to <code>[try_with_size][]([default_initial_chunk_size])</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -286,7 +286,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// ```
     ///
     /// [try_with_size]: Bump::try_with_size
-    /// [default_chunk_size]: crate::config::BumpConfigBuilder::default_chunk_size
+    /// [default_initial_chunk_size]: crate::config::BumpConfigBuilder::default_initial_chunk_size
     #[inline(always)]
     pub fn try_new() -> Result<Self, AllocError> {
         Self::try_new_in(A::default())
@@ -410,7 +410,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size_in][]([default_chunk_size], allocator)</code>.
+    /// This is equivalent to <code>[with_size_in][]([default_initial_chunk_size], allocator)</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -425,7 +425,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     ///
     /// [with_size_in]: Bump::with_size_in
-    /// [default_chunk_size]: crate::config::BumpConfigBuilder::default_chunk_size
+    /// [default_initial_chunk_size]: crate::config::BumpConfigBuilder::default_initial_chunk_size
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -435,7 +435,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size_in][]([default_chunk_size], allocator)</code>.
+    /// This is equivalent to <code>[try_with_size_in][]([default_initial_chunk_size], allocator)</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -451,7 +451,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     ///
     /// [try_with_size_in]: Bump::try_with_size_in
-    /// [default_chunk_size]: crate::config::BumpConfigBuilder::default_chunk_size
+    /// [default_initial_chunk_size]: crate::config::BumpConfigBuilder::default_initial_chunk_size
     #[inline(always)]
     pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
         Self::new_allocated(ChunkSizeDefault, allocator)

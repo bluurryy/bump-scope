@@ -13,13 +13,13 @@ fn alloc_chunks() {
 
     a.scoped(|a| {
         // alloc is large enough to require an additional chunk
-        _ = a.allocate(Layout::array::<u8>(1 << 9).unwrap());
+        _ = a.allocate(Layout::array::<u8>(1 << 11).unwrap());
         assert_eq!(a.stats().count(), 2);
     });
 
     a.scoped(|a| {
         // alloc is larger than the existing chunks and requires a third chunk to be allocated
-        _ = a.allocate(Layout::array::<u8>(1 << 10).unwrap());
+        _ = a.allocate(Layout::array::<u8>(1 << 12).unwrap());
         assert_eq!(a.stats().count(), 3);
     });
 }

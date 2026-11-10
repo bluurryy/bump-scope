@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Any `Allocator` can now be used as the base allocator (and const construction)
 - Add `const_new` and `const_new_in` to const construct `Bump`s
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
+- Add `default_initial_chunk_size` configuration parameter
 - Implement `TakeOwnedSlice` for `BoxedArrayIntoIter`
 
 ### Changed
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `BumpScope`'s `From<&Bump>` and `From<&mut Bump>` implementations
 - **Breaking:** Remove `.any_stats()`, `AnyStats` and associated types
 - **Breaking:** Remove `Bump::unallocated()`, use `const_new` or `const_new_in`
+- **Breaking:** Remove `MINIMUM_CHUNK_SIZE`, replaced by `default_initial_chunk_size`
 
 ### Fixed
 
