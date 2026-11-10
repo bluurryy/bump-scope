@@ -5,7 +5,10 @@
 // Especially `BoxU` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(feature = "nightly", feature(clone_to_uninit, ptr_metadata, allocator_ext))]
+#![cfg_attr(
+    feature = "nightly",
+    feature(clone_to_uninit, ptr_metadata, allocator_ext, doc_notable_trait)
+)]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![cfg_attr(docsrs,
     feature(doc_cfg),
@@ -37,7 +40,10 @@
     attr(allow(unused_features)),
     attr(cfg_attr(feature = "nightly", feature(allocator_ext, btreemap_alloc))),
 ))]
-#![cfg_attr(feature = "nightly", allow(clippy::incompatible_msrv))]
+#![cfg_attr(feature = "nightly", allow(
+    clippy::incompatible_msrv,
+    invalid_doc_attributes, // false positive for doc_notable_trait
+))]
 //! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //! <!-- crate documentation intro end -->

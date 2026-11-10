@@ -502,6 +502,7 @@ impl BumpAllocatorPrivate for Unmanaged<'_> {}
 ///
 /// [equivalent]: https://doc.rust-lang.org/nightly/std/alloc/trait.Allocator.html#equivalent-allocators
 #[expect(private_bounds)]
+#[cfg_attr(feature = "nightly", doc(notable_trait(color = "green")))]
 pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an object.
     ///
@@ -1851,6 +1852,7 @@ unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
 /// Exclusive access to a bump allocator.
 #[expect(private_bounds, clippy::missing_safety_doc)]
+#[cfg_attr(feature = "nightly", doc(notable_trait(color = "red")))]
 pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// Allocate elements of an iterator into a slice.
     ///
