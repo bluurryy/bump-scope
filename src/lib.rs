@@ -157,11 +157,29 @@
 //! unsafe { bump.reset_to(checkpoint); }
 //! assert_eq!(bump.allocated(), 0);
 //! ```
-//! When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
-//! call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow
+//!
+//! # Collections and Scopes
+//!
+//! When using a `Bump(Scope)` as an allocator for a collection you will find that you can no longer
+//! call `scoped` or `scope_guard` since those functions require `&mut self` which does not allow
 //! any outstanding references to the allocator.
 //!
-//! As a workaround you can use the [`claim`] method on a `&Bump(Scope)` to return a `BumpClaimGuard` which
+//! ```compile_fail,E0502
+//! # use bump_scope::Bump;
+//! # let mut bump: Bump = Bump::new();
+//! #
+//! let vec: Vec<u8, &Bump> = Vec::new_in(&bump);
+//!
+//! bump.scoped(|bump_scope| {
+//! #    _ = bump_scope;
+//! # /*
+//!     ...
+//! # */
+//! });
+//! # _ = vec;
+//! ```
+//!
+//! As a workaround you can use the [`claim`] method on `&Bump(Scope)` to return a `BumpClaimGuard` which
 //! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.scope_guard()`.
 //!
 //! A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`

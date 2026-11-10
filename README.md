@@ -123,11 +123,22 @@ let checkpoint = bump.checkpoint();
 unsafe { bump.reset_to(checkpoint); }
 assert_eq!(bump.allocated(), 0);
 ```
-When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
-call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow
+
+## Collections and Scopes
+
+When using a `Bump(Scope)` as an allocator for a collection you will find that you can no longer
+call `scoped` or `scope_guard` since those functions require `&mut self` which does not allow
 any outstanding references to the allocator.
 
-As a workaround you can use the [`claim`] method on a `&Bump(Scope)` to return a `BumpClaimGuard` which
+```rust
+let vec: Vec<u8, &Bump> = Vec::new_in(&bump);
+
+bump.scoped(|bump_scope| {
+    ...
+});
+```
+
+As a workaround you can use the [`claim`] method on `&Bump(Scope)` to return a `BumpClaimGuard` which
 mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.scope_guard()`.
 
 A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`
@@ -175,8 +186,8 @@ vec.reserve(123);
 <!-- feature documentation end -->
 
 ## MSRV policy
-The minimum supported rust version may increase in a minor release.
-It currently is <!--msrv start-->LOL<!--msrv end-->.
+The minimum supported rust version may increase with a minor release.
+It's currently **<!--msrv start-->1.100.0<!--msrv end-->**.
 
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
