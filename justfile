@@ -42,7 +42,7 @@ setup:
 fmt:
     cargo +nightly fmt
     cd benches && cargo +nightly fmt
-    cd crates/fuzzing-support && cargo +nightly fmt
+    cd fuzzing-support && cargo +nightly fmt
     cd tests/test-no-panic && cargo +nightly fmt
     cd fuzz && cargo +nightly fmt
 
@@ -59,7 +59,7 @@ check:
 check-fmt:
     cargo +stable fmt --all --check 2>/dev/null
     cd benches && cargo +stable fmt --all --check 2>/dev/null
-    cd crates/fuzzing-support && cargo +stable fmt --all --check 2>/dev/null
+    cd fuzzing-support && cargo +stable fmt --all --check 2>/dev/null
     cd tests/test-no-panic && cargo +stable fmt --all --check 2>/dev/null
     cd fuzz && cargo +stable fmt --all --check 2>/dev/null
 
@@ -83,7 +83,7 @@ check-clippy-nightly:
     cargo +nightly clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
     cargo +nightly clippy --tests --all-features -- -Dwarnings
     cd benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-    cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
+    cd fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
     cd tests/test-no-panic && cargo +nightly clippy --tests --all-features -- -Dwarnings
     cd fuzz && cargo +nightly clippy -- -Dwarnings
 
@@ -136,7 +136,7 @@ test-nightly miri="":
     cargo +nightly {{ miri }} run --example limit_memory_usage
     cargo +nightly {{ miri }} run --example stack_or_static_memory
     cargo +nightly {{ miri }} run --example thread_local
-    cd crates/fuzzing-support && cargo +nightly {{ miri }} test
+    cd fuzzing-support && cargo +nightly {{ miri }} test
     just tests/test-behavior/nightly --{{ miri }}
     # FIXME: remove once 1.100 has released
     just tests/test-trybuild/test
@@ -179,7 +179,7 @@ coverage-allocator-api cmd="show-html":
 [group('fuzz')]
 coverage-bumping target:
     cargo +nightly fuzz coverage {{ target }}
-    just cov-show-html {{ target }} "{{ pwd }}/crates/fuzzing-support/src/from_bump_scope/bumping.rs"
+    just cov-show-html {{ target }} "{{ pwd }}/fuzzing-support/src/from_bump_scope/bumping.rs"
 
 # Visualize code coverage as a html page.
 [group('fuzz')]

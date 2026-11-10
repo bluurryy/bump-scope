@@ -1,1 +1,0 @@
-Moved to <https://github.com/bluurryy/bump-scope-inspect-asm>.
