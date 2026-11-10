@@ -408,7 +408,7 @@ bit_fields! {
     ///
     /// [`with_size`]: crate::Bump::with_size
     default_chunk_size: usize {
-        default: 512,
+        default: 1024,
         bits: 6,
         encode: |v| v.highest_one().expect("due to validation, default_chunk_size is not zero") as u128,
         decode: |v| u128_as_usize(1 << v),
