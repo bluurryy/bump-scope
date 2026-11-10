@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `.any_stats()`, `AnyStats` and associated types
 - **Breaking:** Remove `Bump::unallocated()`, use `const_new` or `const_new_in`
 - **Breaking:** Remove `MINIMUM_CHUNK_SIZE`, replaced by `default_initial_chunk_size`
+- **Breaking:** Remove `into_raw` and `from_raw`, replaced by `into_raw_parts` and `from_raw_parts`
 
 ### Fixed
 

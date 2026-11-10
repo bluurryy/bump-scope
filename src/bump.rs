@@ -795,7 +795,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn into_raw(self) -> (NonNull<()>, A) {
+    pub fn into_raw_parts(self) -> (NonNull<()>, A) {
         destructure!(let Self { chunk, allocator } = self);
         (chunk.get().as_ptr(), allocator)
     }
@@ -808,7 +808,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// - The config must match the original one.
     #[inline]
     #[must_use]
-    pub unsafe fn from_raw(ptr: NonNull<()>, allocator: A) -> Self {
+    pub unsafe fn from_raw_parts(ptr: NonNull<()>, allocator: A) -> Self {
         Self {
             chunk: Cell::new(unsafe { Chunk::from_ptr(ptr.cast()) }),
             allocator_ptr: Cell::new(ptr::null()),
