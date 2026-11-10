@@ -109,6 +109,8 @@ jobs:
   #   steps:
   #     - uses: actions/checkout@v4
   #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: rust-src
   #     - uses: Swatinem/rust-cache@v2
   #     - run: cargo +stable test --features bytemuck,zerocopy-08
   #     - run: cd tests/test-behavior && cargo +stable test
@@ -121,6 +123,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
+        with:
+      # FIXME: remove once 1.100 has released
+          components: rust-src
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly test --all-features
       - run: cd tests/test-behavior && cargo +nightly test -F nightly
