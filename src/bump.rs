@@ -787,8 +787,8 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     ///
     /// bump.alloc_str("Hello, ").into_ref();
     ///
-    /// let (ptr, alloc) = bump.into_raw();
-    /// let bump: Bump = unsafe { Bump::from_raw(ptr, alloc) };
+    /// let (ptr, alloc) = bump.into_raw_parts();
+    /// let bump: Bump = unsafe { Bump::from_raw_parts(ptr, alloc) };
     ///
     /// bump.alloc_str("World!").into_ref();
     /// # assert_eq!(bump.allocated(), 13);
