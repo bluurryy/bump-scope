@@ -305,9 +305,9 @@ bit_fields! {
     /// Allocation sizes are rounded up to the next multiple of `min_align`,
     /// so allocations can take up more space with a higher `min_align`.
     ///
-    /// For the performance impact see [crates/callgrind-benches][benches].
+    /// For the performance impact see [benches].
     ///
-    /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+    /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
     min_align: usize {
         default: 1,
         bits: 3,
@@ -326,13 +326,13 @@ bit_fields! {
     ///
     /// Bumping downwards can be done in less instructions.
     ///
-    /// For the performance impact see [crates/callgrind-benches][benches].
+    /// For the performance impact see [benches].
     ///
     /// [alloc_iter]: crate::traits::BumpAllocator::alloc_iter
     /// [mut_alloc_iter]: crate::traits::MutBumpAllocator::mut_alloc_iter
     /// [alloc_fmt]: crate::traits::BumpAllocator::alloc_fmt
     /// [mut_alloc_fmt]: crate::traits::MutBumpAllocator::mut_alloc_fmt
-    /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+    /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
     upwards: bool {
         default: true,
         bits: 1,

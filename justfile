@@ -41,7 +41,7 @@ setup:
 [group('fmt')]
 fmt:
     cargo +nightly fmt
-    cd crates/callgrind-benches && cargo +nightly fmt
+    cd benches && cargo +nightly fmt
     cd crates/fuzzing-support && cargo +nightly fmt
     cd tests/test-no-panic && cargo +nightly fmt
     cd fuzz && cargo +nightly fmt
@@ -58,7 +58,7 @@ check:
 [group('check')]
 check-fmt:
     cargo +stable fmt --all --check 2>/dev/null
-    cd crates/callgrind-benches && cargo +stable fmt --all --check 2>/dev/null
+    cd benches && cargo +stable fmt --all --check 2>/dev/null
     cd crates/fuzzing-support && cargo +stable fmt --all --check 2>/dev/null
     cd tests/test-no-panic && cargo +stable fmt --all --check 2>/dev/null
     cd fuzz && cargo +stable fmt --all --check 2>/dev/null
@@ -82,7 +82,7 @@ check-clippy-nightly:
     cargo +nightly clippy --tests --no-default-features -- -Dwarnings
     cargo +nightly clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
     cargo +nightly clippy --tests --all-features -- -Dwarnings
-    cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
+    cd benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
     cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
     cd tests/test-no-panic && cargo +nightly clippy --tests --all-features -- -Dwarnings
     cd fuzz && cargo +nightly clippy -- -Dwarnings
@@ -205,7 +205,7 @@ cov-gen target:
 # Update benchmark results.
 [group('bench')]
 update-bench-results:
-    just crates/callgrind-benches/update
+    just benches/update
 
 # Sync documentation using `cargo insert-docs` and run `doc-rustdoc`.
 [group('doc')]

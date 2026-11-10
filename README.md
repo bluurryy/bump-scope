@@ -51,7 +51,7 @@ The introduction of scopes makes this bump allocator also great for temporary al
 - Implements `core`'s `Allocator` and takes an `Allocator`.
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Has helper methods in `BumpAllocator` for safely allocating values, slices, strings, collecting iterators, formatting, etc.
-- Very fast, see [./crates/callgrind-benches][benches].
+- Very fast, see [./benches][benches].
 - Provides configuration options, to let you optimize the bump allocator for your application.
 - Supports parallel bump allocation with a `BumpPool`.
 
@@ -190,7 +190,7 @@ The minimum supported rust version may increase with a minor release.
 It's currently **<!--msrv start-->1.100.0<!--msrv end-->**.
 
 
-[benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+[benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
 [`Allocator`]: https://doc.rust-lang.org/core/alloc/trait.Allocator.html
 <!-- crate documentation rest end -->
 

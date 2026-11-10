@@ -19,6 +19,8 @@ include = [
   "/UPGRADING.md",
   "src/**/*",
 ]
+autotests = false
+autobenches = false
 
 [package.metadata.docs.rs]
 all-features = true
