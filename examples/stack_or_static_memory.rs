@@ -61,13 +61,6 @@ unsafe impl<const SIZE: usize> Allocator for &StaticAllocator<SIZE> {
         self.taken.set(false);
     }
 
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        let ptr = self.allocate(layout)?;
-        // SAFETY: `alloc` returns a valid memory block
-        unsafe { ptr.cast::<u8>().write_bytes(0, ptr.len()) }
-        Ok(ptr)
-    }
-
     unsafe fn grow(&self, _ptr: NonNull<u8>, _old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.check_layout(new_layout)?;
         Ok(self.memory_ptr())
