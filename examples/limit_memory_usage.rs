@@ -56,13 +56,6 @@ unsafe impl<A: Allocator> Allocator for Limited<A> {
         }
     }
 
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        let new = self.add(layout.size())?;
-        let ptr = self.allocator.allocate_zeroed(layout)?;
-        self.current.set(new);
-        Ok(ptr)
-    }
-
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
             let new = self.add(new_layout.size() - old_layout.size())?;
