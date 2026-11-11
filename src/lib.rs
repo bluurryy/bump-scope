@@ -227,8 +227,9 @@
 //! <!-- feature documentation end -->
 //!
 //! # MSRV policy
-//! The minimum supported rust version may increase with a minor release.
-//! It's currently **<!--msrv start-->1.100.0<!--msrv end-->**.
+//! Increasing the minimum supported rust version is not considered a breaking change.
+//! It can happen in any release.
+//! The MSRV is currently **<!--msrv start-->1.100.0<!--msrv end-->**.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
 //! [`new`]: Bump::new
