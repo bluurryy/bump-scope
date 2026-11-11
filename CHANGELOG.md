@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Use the now stable `core` allocator api
-- Any `Allocator` can now be used as the base allocator (and const construction)
+- Any `Allocator` can now be used as the base allocator (including for const construction)
 - Add `const_new` and `const_new_in` to const construct `Bump`s
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
 - Add `default_initial_chunk_size` configuration parameter
