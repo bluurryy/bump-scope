@@ -52,7 +52,7 @@ The introduction of scopes makes this bump allocator also great for temporary al
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Has helper methods in `BumpAllocator` for safely allocating values, slices, strings, collecting iterators, formatting, etc.
 - Very fast, see [./benches][benches].
-- Provides configuration options, to let you optimize the bump allocator for your application.
+- Provides configuration options to let you optimize the bump allocator for your application.
 - Supports parallel bump allocation with a `BumpPool`.
 
 ## Scopes and Checkpoints
@@ -134,7 +134,7 @@ any outstanding references to the allocator.
 let vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 
 bump.scoped(|bump_scope| {
-    ...
+    // ...
 });
 ```
 
@@ -168,9 +168,8 @@ vec.reserve(123);
 ## Feature Flags
 <!-- feature documentation start -->
 - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
-- **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
-  Without this feature, allocation failures cannot cause panics, and only
-  `try_`-prefixed allocation methods will be available.
+- **`panic-on-alloc`** *(enabled by default)* — Adds api that will panic when allocations fail.
+  Turn this feature off to avoid allocation errors causing panics.
 - **`bytemuck`** — Adds `bytemuck` module with
   <code>BumpAllocatorExt::alloc_zeroed(_slice)</code>
   and <code>box_zero_init(_slice)</code>.

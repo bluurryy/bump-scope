@@ -50,9 +50,8 @@ default = ["std", "panic-on-alloc"]
 ## Adds `BumpPool` and implementations of `std::io` traits.
 std = []
 
-## Adds functions and traits that will panic when allocations fail.
-## Without this feature, allocation failures cannot cause panics, and only
-## `try_`-prefixed allocation methods will be available.
+## Adds api that will panic when allocations fail.
+## Turn this feature off to avoid allocation errors causing panics.
 panic-on-alloc = []
 
 ## Adds `bytemuck` module with 
