@@ -39,6 +39,10 @@ pub type BumpConfig = u128;
 ///
 /// You can either start with the default config with `BumpConfigBuilder::new()`,
 /// or use an existing config as the base with `BumpConfigBuilder(SOME_CONFIG)`.
+///
+/// For examples, see the [module documentation].
+///
+/// [module documentation]: crate::config
 pub struct BumpConfigBuilder(pub BumpConfig);
 
 impl BumpConfigBuilder {
@@ -340,13 +344,13 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Enables the [`const_new`] and [`const_new_in`] constructors.
+    /// Enables the <code>[const_new][const_new]([_in][const_new_in])</code> constructors.
     ///
     /// Setting `const_constructible` to `false` removes some checks and code paths for handling
     /// the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
     ///
-    /// [`const_new`]: crate::Bump::const_new
-    /// [`const_new_in`]: crate::Bump::const_new_in
+    /// [const_new]: crate::Bump::const_new
+    /// [const_new_in]: crate::Bump::const_new_in
     /// [new]: crate::Bump::new
     /// [new_in]: crate::Bump::new_in
     /// [default]: crate::Bump::default
@@ -391,10 +395,11 @@ bit_fields! {
     /// When this is `false`, [`Allocator::shrink`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
     ///
-    /// This also affects the temporary collections used in [`alloc_iter`], [`alloc_fmt`], etc.
+    /// This also affects [`alloc_iter`], [`alloc_fmt`] and [`alloc_cstr_fmt`].
     ///
     /// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
     /// [`alloc_fmt`]: crate::traits::BumpAllocator::alloc_fmt
+    /// [`alloc_cstr_fmt`]: crate::traits::BumpAllocator::alloc_cstr_fmt
     shrinks: bool {
         default: true,
         bits: 1,
@@ -402,11 +407,18 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Sets the default chunk size.
+    /// Sets the default initial chunk size.
     ///
-    /// The size for the chunk layout is calculated like described in [`with_size`].
+    /// This value will be used when creating a [`Bump`] with
+    /// <code>[new][new]([_in][new_in])</code> or when a
+    /// <code>[const_new][const_new]([_in][const_new_in])</code>-constructed
+    /// [`Bump`] allocates its first chunk.
     ///
-    /// [`with_size`]: crate::Bump::with_size
+    /// [`Bump`]: crate::Bump
+    /// [new]: crate::Bump::new
+    /// [new_in]: crate::Bump::new_in
+    /// [const_new]: crate::Bump::const_new
+    /// [const_new_in]: crate::Bump::const_new_in
     default_initial_chunk_size: usize {
         default: 1024,
         bits: 6,
