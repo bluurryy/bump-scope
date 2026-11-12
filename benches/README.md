@@ -103,12 +103,12 @@ If the layout is not statically known then the compiler can not do as many optim
 | name                                | bump-scope (up) | bump-scope (down) | bumpalo   | blink-alloc |
 |-------------------------------------|-----------------|-------------------|-----------|-------------|
 | black_box_allocate                  | 15 \| 1         | 12 \| 1           | 27 \| 4   | 19 \| 3     |
-| black_box_grow_same_align           | 25 \| 2         | 61 \| 11          | 91 \| 13  | 31 \| 6     |
-| black_box_grow_smaller_align        | 25 \| 2         | 61 \| 11          | 91 \| 13  | 31 \| 6     |
-| black_box_grow_larger_align         | 25 \| 2         | 61 \| 11          | 72 \| 12  | 60 \| 11    |
-| black_box_shrink_same_align [^2]    | 13 \| 2         | 53 \| 10          | 51 \| 10  | 23 \| 3     |
-| black_box_shrink_smaller_align [^2] | 13 \| 2         | 47 \| 8           | 45 \| 8   | 23 \| 3     |
-| black_box_shrink_larger_align [^2]  | 13 \| 2         | 53 \| 10          | 15 \| 2   | 60 \| 11    |
+| black_box_grow_same_align           | 25 \| 2         | 58 \| 10          | 91 \| 13  | 31 \| 6     |
+| black_box_grow_smaller_align        | 25 \| 2         | 58 \| 10          | 91 \| 13  | 31 \| 6     |
+| black_box_grow_larger_align         | 25 \| 2         | 58 \| 10          | 72 \| 12  | 60 \| 11    |
+| black_box_shrink_same_align [^2]    | 13 \| 2         | 56 \| 10          | 51 \| 10  | 23 \| 3     |
+| black_box_shrink_smaller_align [^2] | 13 \| 2         | 50 \| 8           | 45 \| 8   | 23 \| 3     |
+| black_box_shrink_larger_align [^2]  | 13 \| 2         | 56 \| 10          | 15 \| 2   | 60 \| 11    |
 | black_box_deallocate                | 6 \| 1          | 6 \| 1            | 7 \| 1    | 6 \| 2      |
 | black_box_deallocate_non_last       | 5 \| 1          | 4 \| 1            | 5 \| 1    | 6 \| 2      |
 
@@ -123,8 +123,8 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
 |---------|-----------------|-------------------|------------|-------------|
-| warm_up | 529 \| 60       | 535 \| 61         | 676 \| 76  | 601 \| 68   |
-| reset   | 23 \| 3         | 22 \| 3           | 23 \| 2    | 26 \| 3     |
+| warm_up | 458 \| 62       | 465 \| 63         | 676 \| 76  | 600 \| 68   |
+| reset   | 33 \| 3         | 32 \| 3           | 23 \| 2    | 26 \| 3     |
 
 <!-- misc table end -->
 
