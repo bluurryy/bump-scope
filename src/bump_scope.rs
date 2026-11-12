@@ -445,6 +445,9 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// # Panics
     /// Panics if the bump allocator is already claimed.
     ///
+    /// # Compile-Time Assertions
+    /// Fails to compile when not [`claimable`].
+    ///
     /// # Examples
     /// ```
     /// use bump_scope::{Bump, extra};
@@ -461,6 +464,8 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// assert_eq!(vec1, [1, 2, 3]);
     /// assert_eq!(vec2, [4, 5, 6]);
     /// ```
+    ///
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     pub fn claim(&self) -> BumpClaimGuard<'_, 'a, C, A> {
         BumpClaimGuard::new(self)
     }
