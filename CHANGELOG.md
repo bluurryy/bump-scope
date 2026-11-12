@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+*With this release, `bump-scope` becomes dependent on the `alloc` crate. 
+I plan to release `bump-scope-core` in the near future, which will be `no-alloc`.*
+
 ### Added
 
 - Use the now stable `core` allocator api
