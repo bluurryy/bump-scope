@@ -9,7 +9,7 @@ readme = "README.md"
 repository = "https://github.com/bluurryy/bump-scope"
 license = "MIT OR Apache-2.0"
 keywords = ["allocation", "allocator", "arena", "bump", "no-std"]
-categories = ["memory-management", "no-std", "no-std::no-alloc"]
+categories = ["memory-management", "no-std"]
 include = [
   "!**/tests/**/*",
   "/CHANGELOG.md",
