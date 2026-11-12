@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** Moved the `alloc_*` methods from `Bump(Scope)` to the `BumpAllocator` trait
+- **Breaking:** Change `alloc_*` methods to now return a `BumpAllocation<T, &Self>` type instead of `BumpBox<'_, T>`
 - **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic
 - **Breaking:** Replace `(scoped_)aligned` with `(scoped_)with_config`
 - **Breaking:** Rename `with_settings` to `change_config`, `borrow_with_settings` to `ref_change_config` and `borrow_mut_with_settings` to `mut_change_config`
