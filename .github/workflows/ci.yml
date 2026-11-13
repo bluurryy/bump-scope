@@ -27,17 +27,16 @@ jobs:
       - run: cd fuzz/fuzz_lib && cargo +stable fmt --all --check
       - run: cd tests/test-no-panic && cargo +stable fmt --all --check
       - run: cd fuzz && cargo +stable fmt --all --check
-  # FIXME: uncomment once 1.100 has released
-  # clippy-stable:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: clippy
-  #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo +stable clippy --tests --no-default-features -- -Dwarnings
-  #     - run: cargo +stable clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
+  clippy-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +stable clippy --tests --no-default-features -- -Dwarnings
+      - run: cargo +stable clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
   clippy-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -64,15 +63,14 @@ jobs:
           tool: cargo-show-asm@0.2
       - uses: Swatinem/rust-cache@v2
       - run: cd tests/test-no-panic && cargo +nightly run --all-features
-  # FIXME: uncomment once 1.100 has released
-  # msrv:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@1.100.0
-  #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo +1.100.0 check --no-default-features
-  #     - run: cargo +1.100.0 check --features bytemuck,zerocopy-08
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.100.0
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +1.100.0 check --no-default-features
+      - run: cargo +1.100.0 check --features bytemuck,zerocopy-08
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
@@ -81,19 +79,17 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
-      # FIXME: uncomment once 1.100 has released
-      # - run: cargo +stable minimal-versions check --features bytemuck,zerocopy-08
+      - run: cargo +stable minimal-versions check --features bytemuck,zerocopy-08
       - run: cargo +nightly minimal-versions check --all-features
-  # FIXME: uncomment once 1.100 has released
-  # no-std-stable:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: thumbv7em-none-eabihf
-  #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
+  no-std-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
   no-std-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -103,34 +99,28 @@ jobs:
           targets: thumbv7em-none-eabihf
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,nightly
-  # FIXME: uncomment once 1.100 has released
-  # test-stable:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: rust-src
-  #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo +stable test --features bytemuck,zerocopy-08
-  #     - run: cd tests/test-behavior && cargo +stable test
-  #     - run: cd tests/test-trybuild && cargo +stable test
-  #     - run: cargo +stable run --example limit_memory_usage
-  #     - run: cargo +stable run --example stack_or_static_memory
-  #     - run: cargo +stable run --example thread_local
+  test-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rust-src # for trybuild output
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +stable test --features bytemuck,zerocopy-08
+      - run: cd tests/test-behavior && cargo +stable test
+      - run: cd tests/test-trybuild && cargo +stable test
+      - run: cargo +stable run --example limit_memory_usage
+      - run: cargo +stable run --example stack_or_static_memory
+      - run: cargo +stable run --example thread_local
   test-nightly:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-        with:
-      # FIXME: remove once 1.100 has released
-          components: rust-src
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly test --all-features
       - run: cd tests/test-behavior && cargo +nightly test -F nightly
-      # FIXME: remove once 1.100 has released
-      - run: cd tests/test-trybuild && cargo +nightly test
       - run: cargo +nightly run --example limit_memory_usage
       - run: cargo +nightly run --example stack_or_static_memory
       - run: cargo +nightly run --example thread_local
