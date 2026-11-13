@@ -11,7 +11,9 @@ use crate::capacity_overflow;
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
 pub(crate) fn panic_on_error<T>(result: Result<T, !>) -> T {
-    result.into_ok()
+    match result {
+        Ok(ok) => ok,
+    }
 }
 
 pub(crate) trait ErrorMode: Sized {

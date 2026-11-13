@@ -280,7 +280,6 @@ where
     E: ErrorMode,
     A: BumpAllocator,
 {
-    // fallback
     // FIXME: if align or size increases we could do a grow instead
     if T::IS_ZST || U::IS_ZST || T::ALIGN < U::ALIGN || T::SIZE < U::SIZE {
         return vec_map_fallback(vec, f);

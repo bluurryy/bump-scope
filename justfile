@@ -72,9 +72,8 @@ check-clippy:
 # Runs clippy on the stable toolchain.
 [group('check')]
 check-clippy-stable:
-    # FIXME: uncomment once 1.100 has released
-    # cargo +stable clippy --tests --no-default-features -- -Dwarnings
-    # cargo +stable clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
+    cargo +stable clippy --tests --no-default-features -- -Dwarnings
+    cargo +stable clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
 
 # Runs clippy on the nightly toolchain.
 [group('check')]
@@ -91,22 +90,19 @@ check-clippy-nightly:
 [group('check')]
 check-msrv:
     # msrv might print warnings that stable doesnt, we dont care
-    # FIXME: uncomment once 1.100 has released
-    # cargo +1.100.0 check --no-default-features
-    # cargo +1.100.0 check --features bytemuck,zerocopy-08
+    cargo +1.100.0 check --no-default-features
+    cargo +1.100.0 check --features bytemuck,zerocopy-08
 
 # Runs `cargo check` with mininmal dependency versions.
 [group('check')]
 check-minimal-versions:
-    # FIXME: uncomment once 1.100 has released
-    # cargo +stable minimal-versions check --features bytemuck,zerocopy-08
+    cargo +stable minimal-versions check --features bytemuck,zerocopy-08
     cargo +nightly minimal-versions check --all-features
 
 # Runs `cargo check` on a target that has no `std` library.
 [group('check')]
 check-no-std:
-    # FIXME: uncomment once 1.100 has released
-    # cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
+    cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
     cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,nightly
 
 # Runs all `test-*`.
@@ -120,13 +116,12 @@ test:
 # Runs tests for the stable toolchain.
 [group('test')]
 test-stable:
-    # FIXME: uncomment once 1.100 has released
-    # cargo +stable test --features bytemuck,zerocopy-08
-    # cargo +stable run --example limit_memory_usage
-    # cargo +stable run --example stack_or_static_memory
-    # cargo +stable run --example thread_local
-    # just tests/test-behavior/stable
-    # just tests/test-trybuild/test
+    cargo +stable test --features bytemuck,zerocopy-08
+    cargo +stable run --example limit_memory_usage
+    cargo +stable run --example stack_or_static_memory
+    cargo +stable run --example thread_local
+    just tests/test-behavior/stable
+    just tests/test-trybuild/test
 
 # Runs tests for the nightly toolchain, optionally with miri.
 [arg("miri", long="miri", value="miri")]
@@ -138,8 +133,6 @@ test-nightly miri="":
     cargo +nightly {{ miri }} run --example thread_local
     cd fuzz/fuzz_lib && cargo +nightly {{ miri }} test
     just tests/test-behavior/nightly --{{ miri }}
-    # FIXME: remove once 1.100 has released
-    just tests/test-trybuild/test
 
 # Checks that the `try_` api doesn't panic.
 [group('test')]
