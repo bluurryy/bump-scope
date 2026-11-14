@@ -8,7 +8,7 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    bump_imp::BumpImpTrait as _, error_mode::ErrorMode, extra::imp_vec_extend, traits::BumpAllocatorPrivate,
+    error_mode::ErrorMode, extra::imp_vec_extend, raw_bump::RawBumpTrait as _, traits::BumpAllocatorPrivate,
     util::SizedTypeProperties,
 };
 
@@ -27,7 +27,7 @@ impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
             return Ok(Self(ManuallyDrop::new(Vec::new_in(alloc))));
         }
 
-        let slice = alloc.0.as_imp().prepare_slice::<E, T>(min_cap)?;
+        let slice = alloc.0.as_raw().prepare_slice::<E, T>(min_cap)?;
         let cap = slice.len();
         let ptr = slice.as_ptr().cast::<T>();
         let vec = unsafe { Vec::from_raw_parts_in(ptr, 0, cap, alloc) };
@@ -60,7 +60,7 @@ impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
         unsafe {
             let vec = ManuallyDrop::take(&mut self.0);
             let (ptr, len, cap, AllocatorWrapper(alloc)) = Vec::into_raw_parts_with_allocator(vec);
-            let slice = alloc.as_imp().commit_slice(NonNull::new_unchecked(ptr), len, cap);
+            let slice = alloc.as_raw().commit_slice(NonNull::new_unchecked(ptr), len, cap);
             Box::from_raw_in(slice.as_ptr(), alloc)
         }
     }

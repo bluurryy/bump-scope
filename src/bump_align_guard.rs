@@ -18,7 +18,7 @@ pub(crate) struct BumpAlignGuard<'b, 'a, const C: BumpConfig, A: Allocator> {
 impl<const C: BumpConfig, A: Allocator> Drop for BumpAlignGuard<'_, '_, C, A> {
     #[inline(always)]
     fn drop(&mut self) {
-        if let Some(chunk) = self.scope.imp.chunk().as_allocated() {
+        if let Some(chunk) = self.scope.raw.chunk().as_allocated() {
             let pos = chunk.pos().addr().get();
             let addr = align_pos(config!(upwards), config!(min_align), pos);
             unsafe { chunk.set_pos_addr(addr) };

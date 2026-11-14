@@ -4,9 +4,9 @@ use alloc::alloc::Global;
 
 use crate::{
     BumpScope,
-    bump_imp::{BumpImp, BumpImpTrait as _},
     chunk_types::{Chunk, ErasedChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
+    raw_bump::{RawBump, RawBumpTrait as _},
     util::transmute_mut,
 };
 
@@ -40,7 +40,7 @@ impl Checkpoint {
 /// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
 pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    bump: &'a mut BumpImp<C, A>,
+    bump: &'a mut RawBump<C, A>,
     checkpoint: Checkpoint,
 }
 
@@ -59,7 +59,7 @@ impl<const C: BumpConfig, A: Allocator> Drop for BumpScopeGuard<'_, C, A> {
 
 impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut BumpImp<C, A>) -> Self {
+    pub(crate) fn new(bump: &'a mut RawBump<C, A>) -> Self {
         let checkpoint = bump.checkpoint();
         Self { bump, checkpoint }
     }

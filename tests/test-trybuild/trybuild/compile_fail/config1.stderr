@@ -173,7 +173,7 @@ note: erroneous constant encountered
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: the above error was encountered while instantiating `fn bump_scope::chunk_types::chunk::Chunk::<1>::alloc::<bump_scope::layout::ArrayLayout>`
- --> $BUMP_SCOPE/src/bump_imp.rs
+ --> $BUMP_SCOPE/src/raw_bump.rs
   |
   |         match self.chunk().alloc(layout) {
   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -767,7 +767,7 @@ note: erroneous constant encountered
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: the above error was encountered while instantiating `fn bump_scope::chunk_types::allocated_chunk::AllocatedChunk::<1>::reset`
- --> $BUMP_SCOPE/src/bump_imp.rs
+ --> $BUMP_SCOPE/src/raw_bump.rs
   |
   |                     chunk.reset();
   |                     ^^^^^^^^^^^^^
@@ -991,7 +991,7 @@ note: erroneous constant encountered
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate::<1, std::alloc::Global>`
- --> $BUMP_SCOPE/src/bump_imp.rs
+ --> $BUMP_SCOPE/src/raw_bump.rs
   |
   |         unsafe { allocator_impl::deallocate(self, ptr, layout) };
   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

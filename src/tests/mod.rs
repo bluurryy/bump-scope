@@ -10,7 +10,7 @@ macro_rules! up_and_down {
             #[allow(unused_imports)]
             pub(crate) use $crate::{
                 config::{BumpConfig, BumpConfigBuilder},
-                bump_imp::{BumpImpTrait, AsBumpImp},
+                raw_bump::{RawBumpTrait, AsRawBump},
                 extra,
             };
         }

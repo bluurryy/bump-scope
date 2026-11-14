@@ -11,13 +11,13 @@ use alloc::alloc::Global;
 use crate::{
     AsBumpScope as _, AsMutBumpScope as _, BumpClaimGuard, BumpScope, BumpScopeGuard,
     base_allocator_storage::BaseAllocatorStorage,
-    bump_imp::BumpImp,
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeDefault, ChunkSizeHint},
     chunk_types::Chunk,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     destructure::destructure,
     error_mode::ErrorMode,
     global_or_system::GlobalOrSystem,
+    raw_bump::RawBump,
     stats::Stats,
     util::{transmute_mut, transmute_ref, transmute_value},
 };
@@ -115,7 +115,7 @@ use crate::error_mode::panic_on_error;
 ///
 #[repr(transparent)]
 pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    pub(crate) imp: BumpImp<C, A>,
+    pub(crate) raw: RawBump<C, A>,
 }
 
 // Sending Bumps when nothing is allocated is fine.
@@ -127,7 +127,7 @@ impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> RefUnwindSafe for Bump<C
 
 impl<const C: BumpConfig, A: Allocator> Drop for Bump<C, A> {
     fn drop(&mut self) {
-        let bump = &self.imp;
+        let bump = &self.raw;
 
         let Some(mut chunk) = bump.chunk().as_allocated() else {
             return;
@@ -152,7 +152,7 @@ impl<const C: BumpConfig, A: Allocator> Drop for Bump<C, A> {
 
 impl<const C: BumpConfig, A: Allocator> Debug for Bump<C, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.imp.stats().debug_format("Bump", f)
+        self.raw.stats().debug_format("Bump", f)
     }
 }
 
@@ -169,7 +169,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Default for Bump<C, A> {
     fn default() -> Self {
         if config!(const_constructible) {
             Self {
-                imp: BumpImp::const_new(A::default()),
+                raw: RawBump::const_new(A::default()),
             }
         } else {
             cfg_select! {
@@ -204,7 +204,7 @@ impl<const C: BumpConfig, A: Allocator + GlobalOrSystem> Bump<C, A> {
         const { assert!(config!(const_constructible)) };
 
         Self {
-            imp: BumpImp::const_new(A::CONST_DEFAULT),
+            raw: RawBump::const_new(A::CONST_DEFAULT),
         }
     }
 }
@@ -231,7 +231,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
         const { assert!(config!(const_constructible)) };
 
         Self {
-            imp: BumpImp::const_new(allocator),
+            raw: RawBump::const_new(allocator),
         }
     }
 }
@@ -395,7 +395,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     #[inline(always)]
     pub(crate) fn new_allocated<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            imp: BumpImp::new(size, allocator)?,
+            raw: RawBump::new(size, allocator)?,
         })
     }
 
@@ -615,7 +615,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     #[inline(always)]
     pub fn reset(&mut self) {
-        let bump = &self.imp;
+        let bump = &self.raw;
 
         let Some(mut chunk) = bump.chunk().as_allocated() else {
             return;
@@ -699,14 +699,14 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     #[inline(always)]
     pub fn reset_to_start(&mut self) {
-        self.imp.reset_to_start();
+        self.raw.reset_to_start();
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, C, A> {
-        self.imp.stats()
+        self.raw.stats()
     }
 
     /// Converts this `Bump` into a `Bump` with a new config.
@@ -725,11 +725,11 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     ///
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<NEW_C, A> {
-        BumpImp::<C, A>::const_assert_upwards_matches::<NEW_C>();
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
-        self.imp.assert_convertible_claimable::<NEW_C>();
-        self.imp.assert_convertible_const_constructible::<NEW_C>();
-        self.imp.align_to(config!(NEW_C, min_align));
+        self.raw.assert_convertible_claimable::<NEW_C>();
+        self.raw.assert_convertible_const_constructible::<NEW_C>();
+        self.raw.align_to(config!(NEW_C, min_align));
 
         unsafe { transmute_value(self) }
     }
@@ -750,7 +750,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<NEW_C, A> {
-        self.imp.ensure_satisfies_config_for_borrow::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
 
@@ -768,7 +768,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<NEW_C, A> {
-        self.imp.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
 
@@ -789,8 +789,8 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     #[inline]
     #[must_use]
     pub fn into_raw_parts(self) -> (NonNull<()>, A) {
-        destructure!(let Self { imp } = self);
-        destructure!(let BumpImp<C, A> { chunk, allocator } = imp);
+        destructure!(let Self { raw } = self);
+        destructure!(let RawBump<C, A> { chunk, allocator } = raw);
         let ptr = chunk.get().as_ptr();
         // SAFETY: safe to call from `Bump`, because it stores the base allocator
         let alloc = unsafe { allocator.into_inner() };
@@ -809,7 +809,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     #[must_use]
     pub unsafe fn from_raw_parts(ptr: NonNull<()>, allocator: A) -> Self {
         Self {
-            imp: BumpImp {
+            raw: RawBump {
                 chunk: Cell::new(unsafe { Chunk::from_ptr(ptr.cast()) }),
                 allocator: BaseAllocatorStorage::new(allocator),
             },
@@ -823,7 +823,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        self.imp.allocator()
+        self.raw.allocator()
     }
 
     /// Forwards to [`BumpScope::claim`].
@@ -860,17 +860,17 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
 unsafe impl<const C: BumpConfig, A: Allocator> Allocator for Bump<C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.imp.allocate(layout)
+        self.raw.allocate(layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { self.imp.deallocate(ptr, layout) };
+        unsafe { self.raw.deallocate(ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp.grow(ptr, old_layout, new_layout) }
+        unsafe { self.raw.grow(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -880,11 +880,11 @@ unsafe impl<const C: BumpConfig, A: Allocator> Allocator for Bump<C, A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp.grow_zeroed(ptr, old_layout, new_layout) }
+        unsafe { self.raw.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp.shrink(ptr, old_layout, new_layout) }
+        unsafe { self.raw.shrink(ptr, old_layout, new_layout) }
     }
 }

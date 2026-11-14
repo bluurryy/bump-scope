@@ -21,7 +21,7 @@ use crate::{
 
 /// Provides bump allocation functionality for both `Bump` and `BumpScope`.
 #[repr(C)]
-pub(crate) struct BumpImp<const C: BumpConfig, A> {
+pub(crate) struct RawBump<const C: BumpConfig, A> {
     /// Either a chunk allocated from `A`, or a [`CLAIMED`] or [`CONST_CONSTRUCTED`] dummy chunk.
     ///
     /// [`CLAIMED`]: crate::chunk_types::DummyChunk::CLAIMED
@@ -30,7 +30,7 @@ pub(crate) struct BumpImp<const C: BumpConfig, A> {
     pub(crate) allocator: BaseAllocatorStorage<A>,
 }
 
-impl<const C: BumpConfig, A: Allocator> BumpImp<C, A> {
+impl<const C: BumpConfig, A: Allocator> RawBump<C, A> {
     #[inline(always)]
     pub(crate) const fn const_new(allocator: A) -> Self {
         Self {
@@ -324,7 +324,7 @@ impl<const C: BumpConfig, A: Allocator> BumpImp<C, A> {
     }
 }
 
-unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpImp<C, A> {
+unsafe impl<const C: BumpConfig, A: Allocator> Allocator for RawBump<C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         allocator_impl::allocate(self, layout)
@@ -356,7 +356,7 @@ unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpImp<C, A> {
     }
 }
 
-pub(crate) trait BumpImpTrait {
+pub(crate) trait RawBumpTrait {
     const CONFIG: BumpConfig;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
@@ -492,7 +492,7 @@ pub(crate) trait BumpImpTrait {
     fn allocated(&self) -> usize;
 }
 
-impl<const C: BumpConfig, A: Allocator> BumpImpTrait for BumpImp<C, A> {
+impl<const C: BumpConfig, A: Allocator> RawBumpTrait for RawBump<C, A> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
@@ -771,7 +771,7 @@ impl<const C: BumpConfig, A: Allocator> BumpImpTrait for BumpImp<C, A> {
     }
 }
 
-impl BumpImpTrait for Unmanaged<'_> {
+impl RawBumpTrait for Unmanaged<'_> {
     // FIXME: make this an invalid bump config?
     const CONFIG: BumpConfig = DEFAULT_BUMP_CONFIG;
 
@@ -847,56 +847,56 @@ impl BumpImpTrait for Unmanaged<'_> {
     }
 }
 
-pub(crate) trait AsBumpImp {
-    type Type: BumpImpTrait;
+pub(crate) trait AsRawBump {
+    type Type: RawBumpTrait;
 
-    fn as_imp(&self) -> &Self::Type;
+    fn as_raw(&self) -> &Self::Type;
 }
 
-impl<const C: BumpConfig, A: Allocator> AsBumpImp for BumpImp<C, A> {
-    type Type = BumpImp<C, A>;
+impl<const C: BumpConfig, A: Allocator> AsRawBump for RawBump<C, A> {
+    type Type = RawBump<C, A>;
 
-    fn as_imp(&self) -> &Self::Type {
+    fn as_raw(&self) -> &Self::Type {
         self
     }
 }
 
-impl<T: AsBumpImp> AsBumpImp for &T {
+impl<T: AsRawBump> AsRawBump for &T {
     type Type = T::Type;
 
-    fn as_imp(&self) -> &Self::Type {
-        T::as_imp(self)
+    fn as_raw(&self) -> &Self::Type {
+        T::as_raw(self)
     }
 }
 
-impl<T: AsBumpImp> AsBumpImp for &mut T {
+impl<T: AsRawBump> AsRawBump for &mut T {
     type Type = T::Type;
 
-    fn as_imp(&self) -> &Self::Type {
-        T::as_imp(self)
+    fn as_raw(&self) -> &Self::Type {
+        T::as_raw(self)
     }
 }
 
-impl<const C: BumpConfig, A: Allocator> AsBumpImp for Bump<C, A> {
-    type Type = BumpImp<C, A>;
+impl<const C: BumpConfig, A: Allocator> AsRawBump for Bump<C, A> {
+    type Type = RawBump<C, A>;
 
-    fn as_imp(&self) -> &Self::Type {
-        &self.imp
+    fn as_raw(&self) -> &Self::Type {
+        &self.raw
     }
 }
 
-impl<const C: BumpConfig, A: Allocator> AsBumpImp for BumpScope<'_, C, A> {
-    type Type = BumpImp<C, A>;
+impl<const C: BumpConfig, A: Allocator> AsRawBump for BumpScope<'_, C, A> {
+    type Type = RawBump<C, A>;
 
-    fn as_imp(&self) -> &Self::Type {
-        &self.imp
+    fn as_raw(&self) -> &Self::Type {
+        &self.raw
     }
 }
 
-impl AsBumpImp for Unmanaged<'_> {
+impl AsRawBump for Unmanaged<'_> {
     type Type = Self;
 
-    fn as_imp(&self) -> &Self::Type {
+    fn as_raw(&self) -> &Self::Type {
         self
     }
 }
