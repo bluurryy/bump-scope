@@ -1,7 +1,6 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
     cell::Cell,
-    marker::PhantomData,
     num::NonZeroUsize,
     ops::Range,
     ptr::{self, NonNull},
@@ -9,8 +8,8 @@ use core::{
 
 use crate::{
     Bump, BumpScope, Checkpoint, Unmanaged, allocator_impl,
-    bump_scope::BumpScopeWithoutLifetime,
-    chunk_size::{ChunkSizeCapacityFirst, ChunkSizeDefault},
+    base_allocator_storage::BaseAllocatorStorage,
+    chunk_size::{ChunkSize, ChunkSizeCapacityFirst, ChunkSizeDefault},
     chunk_types::{AllocatedChunk, Chunk, ChunkKind},
     config::{self, BumpConfig, DEFAULT_BUMP_CONFIG, config},
     error_mode::ErrorMode,
@@ -21,58 +20,59 @@ use crate::{
 };
 
 /// Provides bump allocation functionality for both `Bump` and `BumpScope`.
-pub(crate) struct BumpImp<'a, const C: BumpConfig, A, const IS_SCOPE: bool> {
-    /// Chunk is always dereferenceable.
-    pub(crate) chunk: NonNull<Cell<Chunk<C>>>,
-    pub(crate) marker: PhantomData<&'a A>,
-}
-
-/// Must match the repr of [`Bump`]!
 #[repr(C)]
-struct BumpData<const C: BumpConfig, A> {
-    chunk: Cell<Chunk<C>>,
-    allocator_ptr: Cell<*const A>,
-    allocator: A,
+pub(crate) struct BumpImp<const C: BumpConfig, A> {
+    /// Either a chunk allocated from `A`, or a [`CLAIMED`] or [`CONST_CONSTRUCTED`] dummy chunk.
+    ///
+    /// [`CLAIMED`]: crate::chunk_types::DummyChunk::CLAIMED
+    /// [`CONST_CONSTRUCTED`]: crate::chunk_types::DummyChunk::CONST_CONSTRUCTED
+    pub(crate) chunk: Cell<Chunk<C>>,
+    pub(crate) allocator: BaseAllocatorStorage<A>,
 }
 
-/// Must match the repr of [`BumpScope`]!
-#[repr(C)]
-struct BumpScopeData<const C: BumpConfig, A> {
-    chunk: Cell<Chunk<C>>,
-    allocator_ptr: Cell<*const A>,
-}
-
-impl<const C: BumpConfig, A, const IS_SCOPE: bool> Clone for BumpImp<'_, C, A, IS_SCOPE> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<const C: BumpConfig, A, const IS_SCOPE: bool> Copy for BumpImp<'_, C, A, IS_SCOPE> {}
-
-impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C, A, IS_SCOPE> {
+impl<const C: BumpConfig, A: Allocator> BumpImp<C, A> {
     #[inline(always)]
-    pub(crate) fn chunk(self) -> Chunk<C> {
-        unsafe { self.chunk.as_ref() }.get()
-    }
-
-    #[inline(always)]
-    pub(crate) fn set_chunk(self, chunk: Chunk<C>) {
-        unsafe { self.chunk.as_ref() }.set(chunk);
-    }
-
-    #[inline(always)]
-    pub(crate) fn allocator(self) -> &'a A {
-        if IS_SCOPE {
-            unsafe { &*(*self.chunk.as_ptr().cast::<BumpScopeData<C, A>>()).allocator_ptr.get() }
-        } else {
-            unsafe { &(*self.chunk.as_ptr().cast::<BumpData<C, A>>()).allocator }
+    pub(crate) const fn const_new(allocator: A) -> Self {
+        Self {
+            chunk: Cell::new(Chunk::CONST_CONSTRUCTED),
+            allocator: BaseAllocatorStorage::new(allocator),
         }
+    }
+
+    #[inline]
+    pub(crate) fn new<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
+        Ok(Self {
+            chunk: Cell::new(Chunk::from_allocated(AllocatedChunk::new_first::<E, A>(size, &allocator)?)),
+            allocator: BaseAllocatorStorage::new(allocator),
+        })
+    }
+
+    #[inline(always)]
+    pub(crate) fn create_ref(&self) -> Self {
+        Self {
+            chunk: self.chunk.clone(),
+            allocator: self.allocator.create_ref(),
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn chunk(&self) -> Chunk<C> {
+        self.chunk.get()
+    }
+
+    #[inline(always)]
+    pub(crate) fn set_chunk(&self, chunk: Chunk<C>) {
+        self.chunk.set(chunk);
+    }
+
+    #[inline(always)]
+    pub(crate) fn allocator(&self) -> &A {
+        &self.allocator
     }
 
     /// Reset's the bump pointer to the very start.
     #[inline]
-    pub(crate) fn reset_to_start(self) {
+    pub(crate) fn reset_to_start(&self) {
         let Some(mut chunk) = self.chunk().as_allocated() else {
             return;
         };
@@ -89,12 +89,12 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(self) -> Stats<'a, C, A> {
+    pub fn stats(&self) -> Stats<'_, C, A> {
         Stats::from_raw_chunk(self.chunk())
     }
 
     #[inline(always)]
-    pub(crate) fn align_to(self, align: usize) {
+    pub(crate) fn align_to(&self, align: usize) {
         assert!(align.is_power_of_two() && align <= 16);
 
         if align > config!(min_align) {
@@ -112,7 +112,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     /// `checkpoint.chunk.is_dummy()` must be `true`.
     #[cold]
     #[inline(never)]
-    unsafe fn reset_to_with_dummy_checkpoint(self, checkpoint: Checkpoint) {
+    unsafe fn reset_to_with_dummy_checkpoint(&self, checkpoint: Checkpoint) {
         debug_assert!(checkpoint.chunk.is_dummy());
 
         if unlikely(config!(claimable) && checkpoint.chunk.is_claimed()) {
@@ -140,7 +140,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
         }
     }
 
-    fn can_convert_claimable<const NEW_C: BumpConfig>(self) -> bool {
+    fn can_convert_claimable<const NEW_C: BumpConfig>(&self) -> bool {
         // either nothing changed, the new config is claimable, the old one isn't, or the bump is currently not claimed
         (const {
             let old = config!(claimable);
@@ -149,13 +149,13 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
         }) || !self.is_claimed()
     }
 
-    pub(crate) fn assert_convertible_claimable<const NEW_C: BumpConfig>(self) {
+    pub(crate) fn assert_convertible_claimable<const NEW_C: BumpConfig>(&self) {
         if !self.can_convert_claimable::<NEW_C>() {
             config::cant_change_due_to_claimable();
         }
     }
 
-    fn can_convert_const_constructible<const NEW_C: BumpConfig>(self) -> bool {
+    fn can_convert_const_constructible<const NEW_C: BumpConfig>(&self) -> bool {
         // To be able to convert const_constructible, either:
         // - nothing changed
         // - the new config is const_constructible
@@ -168,13 +168,13 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
         }) || self.stats().current_chunk().is_some()
     }
 
-    pub(crate) fn assert_convertible_const_constructible<const NEW_C: BumpConfig>(self) {
+    pub(crate) fn assert_convertible_const_constructible<const NEW_C: BumpConfig>(&self) {
         if !self.can_convert_const_constructible::<NEW_C>() {
             config::cant_change_due_to_const_constructible();
         }
     }
 
-    pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(self) {
+    pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         const {
@@ -194,7 +194,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
         self.assert_convertible_const_constructible::<NEW_C>();
     }
 
-    pub(crate) fn ensure_satisfies_config_for_borrow_mut<const NEW_C: BumpConfig>(self) {
+    pub(crate) fn ensure_satisfies_config_for_borrow_mut<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         const {
@@ -222,7 +222,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range<B: ErrorMode, T>(self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    pub(crate) fn prepare_allocation_range<B: ErrorMode, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let Ok(layout) = ArrayLayout::array::<T>(cap) else {
             return Err(B::capacity_overflow());
         };
@@ -239,19 +239,19 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     /// The active chunk must *not* have space for `layout`.
     #[cold]
     #[inline(never)]
-    pub(crate) fn alloc_in_another_chunk<E: ErrorMode>(self, layout: Layout) -> Result<NonNull<u8>, E> {
+    pub(crate) fn alloc_in_another_chunk<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         unsafe { self.in_another_chunk(CustomLayout(layout), Chunk::alloc) }
     }
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn alloc_sized_in_another_chunk<E: ErrorMode, T>(self) -> Result<NonNull<u8>, E> {
+    pub(crate) fn alloc_sized_in_another_chunk<E: ErrorMode, T>(&self) -> Result<NonNull<u8>, E> {
         self.alloc_in_another_chunk(Layout::new::<T>())
     }
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn alloc_slice_in_another_chunk<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<u8>, E> {
+    pub(crate) fn alloc_slice_in_another_chunk<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -261,14 +261,14 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorMode, T>(self) -> Result<NonNull<u8>, E> {
+    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorMode, T>(&self) -> Result<NonNull<u8>, E> {
         let layout = CustomLayout(Layout::new::<T>());
         unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation) }
     }
 
     #[cold]
     #[inline(never)]
-    fn prepare_allocation_range_in_another_chunk<E: ErrorMode>(self, layout: ArrayLayout) -> Result<Range<NonNull<u8>>, E> {
+    fn prepare_allocation_range_in_another_chunk<E: ErrorMode>(&self, layout: ArrayLayout) -> Result<Range<NonNull<u8>>, E> {
         unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation_range) }
     }
 
@@ -277,7 +277,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     /// `f` on the new chunk created by `RawChunk::append_for` with the layout `layout` must return `Some`.
     #[inline(always)]
     pub(crate) unsafe fn in_another_chunk<E: ErrorMode, R, L: LayoutProps>(
-        self,
+        &self,
         layout: L,
         mut f: impl FnMut(Chunk<C>, L) -> Option<R>,
     ) -> Result<R, E>
@@ -324,20 +324,20 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImp<'a, C,
     }
 }
 
-unsafe impl<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> Allocator for BumpImp<'_, C, A, IS_SCOPE> {
+unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpImp<C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::allocate(*self, layout)
+        allocator_impl::allocate(self, layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { allocator_impl::deallocate(*self, ptr, layout) };
+        unsafe { allocator_impl::deallocate(self, ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::grow(*self, ptr, old_layout, new_layout) }
+        unsafe { allocator_impl::grow(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -347,16 +347,16 @@ unsafe impl<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> Allocator f
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::grow_zeroed(*self, ptr, old_layout, new_layout) }
+        unsafe { allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::shrink(*self, ptr, old_layout, new_layout) }
+        unsafe { allocator_impl::shrink(self, ptr, old_layout, new_layout) }
     }
 }
 
-pub(crate) trait BumpImpTrait<'a> {
+pub(crate) trait BumpImpTrait {
     const CONFIG: BumpConfig;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
@@ -371,7 +371,7 @@ pub(crate) trait BumpImpTrait<'a> {
     /// #     }
     /// # }
     /// ```
-    fn alloc<E: ErrorMode>(self, layout: Layout) -> Result<NonNull<u8>, E>;
+    fn alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
@@ -385,7 +385,7 @@ pub(crate) trait BumpImpTrait<'a> {
     /// #     }
     /// # }
     /// ```
-    fn alloc_sized<E: ErrorMode, T>(self) -> Result<NonNull<T>, E>;
+    fn alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///    
@@ -401,7 +401,7 @@ pub(crate) trait BumpImpTrait<'a> {
     /// #     }
     /// # }
     /// ```
-    fn alloc_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<T>, E>;
+    fn alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
@@ -415,12 +415,12 @@ pub(crate) trait BumpImpTrait<'a> {
     /// #     }
     /// # }
     /// ```
-    fn alloc_slice_for<E: ErrorMode, T>(self, slice: &[T]) -> Result<NonNull<T>, E>;
+    fn alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// The allocation takes up as much of the free space of the chunk as possible.
-    fn prepare_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<[T]>, E>;
+    fn prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
 
     /// Allocate part of the slice returned from a [`spec_prepare_slice`] call.
     ///
@@ -433,7 +433,7 @@ pub(crate) trait BumpImpTrait<'a> {
     ///
     /// [`spec_prepare_slice`]: BumpAllocatorPrivate::spec_prepare_slice
     /// [unclaimed]: crate::BumpScope::claim
-    unsafe fn commit_slice<T>(self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
+    unsafe fn commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`shrink`](core::alloc::Allocator::shrink).
     ///
@@ -457,47 +457,46 @@ pub(crate) trait BumpImpTrait<'a> {
     ///
     /// [shrink]: core::alloc::Allocator::shrink
     /// [array]: Layout::array
-    unsafe fn shrink_slice<T>(self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
     /// Prepares allocation for an instance of `T` memory.
     ///
     /// This is like [`spec_alloc_sized`], except that it doesn't change the bump pointer.
     ///
     /// [`spec_alloc_sized`]: BumpAllocatorPrivate::spec_alloc_sized
-    fn prepare_sized_allocation<B: ErrorMode, T>(self) -> Result<NonNull<T>, B>;
+    fn prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B>;
 
     /// See [`BumpAllocator::checkpoint`].
     #[must_use]
-    fn checkpoint(self) -> Checkpoint;
+    fn checkpoint(&self) -> Checkpoint;
 
     /// See [`BumpAllocator::reset_to`].
-    unsafe fn reset_to(self, checkpoint: Checkpoint);
+    unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
     /// Returns the bump pointer.
-    fn pos(self) -> *mut u8;
+    fn pos(&self) -> *mut u8;
 
     /// Sets the bump pointer.
     ///
     /// # Safety
     /// Chunk must be allocated.
-    unsafe fn set_pos(self, addr: usize);
+    unsafe fn set_pos(&self, addr: usize);
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
-    fn reserve<E: ErrorMode>(self, additional: usize) -> Result<(), E>;
+    fn reserve<E: ErrorMode>(&self, additional: usize) -> Result<(), E>;
 
-    fn make_allocated<E: ErrorMode>(self) -> Result<(), E>;
+    fn make_allocated<E: ErrorMode>(&self) -> Result<(), E>;
 
-    #[expect(clippy::wrong_self_convention)]
-    fn is_claimed(self) -> bool;
+    fn is_claimed(&self) -> bool;
 
-    fn allocated(self) -> usize;
+    fn allocated(&self) -> usize;
 }
 
-impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'a> for BumpImp<'a, C, A, IS_SCOPE> {
+impl<const C: BumpConfig, A: Allocator> BumpImpTrait for BumpImp<C, A> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
-    fn alloc<E: ErrorMode>(self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         match self.chunk().alloc(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
@@ -505,7 +504,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn alloc_sized<E: ErrorMode, T>(self) -> Result<NonNull<T>, E> {
+    fn alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         let layout = const {
             match SizedLayout::new::<T>().increase_align(config!(min_align)) {
                 Ok(ok) => ok,
@@ -523,7 +522,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn alloc_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<T>, E> {
+    fn alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         let Ok(layout) = ArrayLayout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -538,7 +537,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn alloc_slice_for<E: ErrorMode, T>(self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(slice);
 
         match self.chunk().alloc(layout) {
@@ -551,7 +550,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn prepare_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         let range = self.prepare_allocation_range::<E, T>(len)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
@@ -567,7 +566,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    unsafe fn commit_slice<T>(self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    unsafe fn commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
             // SAFETY: successful `spec_prepare_slice` guarantees an allocated chunk
             let chunk = self.chunk().as_allocated_unchecked();
@@ -587,7 +586,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    unsafe fn shrink_slice<T>(self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         if !config!(shrinks) {
             return None;
         }
@@ -639,7 +638,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn prepare_sized_allocation<B: ErrorMode, T>(self) -> Result<NonNull<T>, B> {
+    fn prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         match self.chunk().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.prepare_allocation_in_another_chunk::<B, T>() {
@@ -650,12 +649,12 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline]
-    fn checkpoint(self) -> Checkpoint {
+    fn checkpoint(&self) -> Checkpoint {
         Checkpoint::new(self.chunk())
     }
 
     #[cfg_attr(not(debug_assertions), inline(always))]
-    unsafe fn reset_to(self, checkpoint: Checkpoint) {
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         if (config!(claimable) || config!(const_constructible)) && checkpoint.chunk.is_dummy() {
             return unsafe { self.reset_to_with_dummy_checkpoint(checkpoint) };
         }
@@ -688,18 +687,18 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline]
-    fn pos(self) -> *mut u8 {
+    fn pos(&self) -> *mut u8 {
         self.chunk().pos().as_ptr()
     }
 
     #[inline]
-    unsafe fn set_pos(self, addr: usize) {
+    unsafe fn set_pos(&self, addr: usize) {
         // SAFETY: callee must guarantee that the chunk is allocated
         unsafe { self.chunk().as_allocated_unchecked().set_pos_addr(addr) };
     }
 
     #[inline]
-    fn reserve<E: ErrorMode>(self, additional: usize) -> Result<(), E> {
+    fn reserve<E: ErrorMode>(&self, additional: usize) -> Result<(), E> {
         let chunk = self.chunk();
 
         match chunk.kind() {
@@ -748,7 +747,7 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline]
-    fn make_allocated<E: ErrorMode>(self) -> Result<(), E> {
+    fn make_allocated<E: ErrorMode>(&self) -> Result<(), E> {
         match self.chunk().kind() {
             ChunkKind::Claimed => Err(E::claimed()),
             ChunkKind::ConstConstructed => {
@@ -762,182 +761,142 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
     }
 
     #[inline(always)]
-    fn is_claimed(self) -> bool {
+    fn is_claimed(&self) -> bool {
         self.chunk().is_claimed()
     }
 
     #[inline(always)]
-    fn allocated(self) -> usize {
+    fn allocated(&self) -> usize {
         self.stats().allocated()
     }
 }
 
-impl<'a> BumpImpTrait<'a> for Unmanaged<'a> {
+impl BumpImpTrait for Unmanaged<'_> {
     // FIXME: make this an invalid bump config?
     const CONFIG: BumpConfig = DEFAULT_BUMP_CONFIG;
 
-    fn alloc<E: ErrorMode>(self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         _ = layout;
         Err(E::unmanaged())
     }
 
-    fn alloc_sized<E: ErrorMode, T>(self) -> Result<NonNull<T>, E> {
+    fn alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         Err(E::unmanaged())
     }
 
-    fn alloc_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<T>, E> {
+    fn alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         _ = len;
         Err(E::unmanaged())
     }
 
-    fn alloc_slice_for<E: ErrorMode, T>(self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         _ = slice;
         Err(E::unmanaged())
     }
 
-    fn prepare_slice<E: ErrorMode, T>(self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         _ = len;
         Err(E::unmanaged())
     }
 
-    unsafe fn commit_slice<T>(self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    unsafe fn commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         _ = (ptr, len, cap);
         NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
     }
 
-    unsafe fn shrink_slice<T>(self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         _ = (ptr, old_len, new_len);
         None
     }
 
-    fn prepare_sized_allocation<B: ErrorMode, T>(self) -> Result<NonNull<T>, B> {
+    fn prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         Err(B::unmanaged())
     }
 
-    fn checkpoint(self) -> Checkpoint {
+    fn checkpoint(&self) -> Checkpoint {
         Checkpoint::INVALID
     }
 
-    unsafe fn reset_to(self, checkpoint: Checkpoint) {
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         _ = checkpoint;
     }
 
-    fn pos(self) -> *mut u8 {
+    fn pos(&self) -> *mut u8 {
         ptr::dangling_mut()
     }
 
-    unsafe fn set_pos(self, addr: usize) {
+    unsafe fn set_pos(&self, addr: usize) {
         _ = addr;
     }
 
-    fn reserve<E: ErrorMode>(self, additional: usize) -> Result<(), E> {
+    fn reserve<E: ErrorMode>(&self, additional: usize) -> Result<(), E> {
         _ = additional;
         Err(E::unmanaged())
     }
 
-    fn make_allocated<E: ErrorMode>(self) -> Result<(), E> {
+    fn make_allocated<E: ErrorMode>(&self) -> Result<(), E> {
         Err(E::unmanaged())
     }
 
-    fn is_claimed(self) -> bool {
+    fn is_claimed(&self) -> bool {
         false
     }
 
-    fn allocated(self) -> usize {
+    fn allocated(&self) -> usize {
         0
     }
 }
 
 pub(crate) trait AsBumpImp {
-    type Type<'a>: BumpImpTrait<'a>
-    where
-        Self: 'a;
+    type Type: BumpImpTrait;
 
-    fn imp(&self) -> Self::Type<'_>;
+    fn as_imp(&self) -> &Self::Type;
 }
 
-impl<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> AsBumpImp for BumpImp<'_, C, A, IS_SCOPE> {
-    type Type<'a>
-        = BumpImp<'a, C, A, IS_SCOPE>
-    where
-        Self: 'a;
+impl<const C: BumpConfig, A: Allocator> AsBumpImp for BumpImp<C, A> {
+    type Type = BumpImp<C, A>;
 
-    fn imp(&self) -> Self::Type<'_> {
-        *self
+    fn as_imp(&self) -> &Self::Type {
+        self
     }
 }
 
 impl<T: AsBumpImp> AsBumpImp for &T {
-    type Type<'a>
-        = T::Type<'a>
-    where
-        Self: 'a;
+    type Type = T::Type;
 
-    fn imp(&self) -> Self::Type<'_> {
-        T::imp(self)
+    fn as_imp(&self) -> &Self::Type {
+        T::as_imp(self)
     }
 }
 
 impl<T: AsBumpImp> AsBumpImp for &mut T {
-    type Type<'a>
-        = T::Type<'a>
-    where
-        Self: 'a;
+    type Type = T::Type;
 
-    fn imp(&self) -> Self::Type<'_> {
-        T::imp(self)
+    fn as_imp(&self) -> &Self::Type {
+        T::as_imp(self)
     }
 }
 
 impl<const C: BumpConfig, A: Allocator> AsBumpImp for Bump<C, A> {
-    type Type<'a>
-        = BumpImp<'a, C, A, false>
-    where
-        Self: 'a;
+    type Type = BumpImp<C, A>;
 
-    fn imp(&self) -> Self::Type<'_> {
-        BumpImp {
-            chunk: NonNull::from(self).cast(),
-            marker: PhantomData,
-        }
+    fn as_imp(&self) -> &Self::Type {
+        &self.imp
     }
 }
 
 impl<const C: BumpConfig, A: Allocator> AsBumpImp for BumpScope<'_, C, A> {
-    type Type<'a>
-        = BumpImp<'a, C, A, true>
-    where
-        Self: 'a;
+    type Type = BumpImp<C, A>;
 
-    fn imp(&self) -> Self::Type<'_> {
-        BumpImp {
-            chunk: NonNull::from(self).cast(),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<const C: BumpConfig, A: Allocator> AsBumpImp for BumpScopeWithoutLifetime<C, A> {
-    type Type<'a>
-        = BumpImp<'a, C, A, true>
-    where
-        Self: 'a;
-
-    fn imp(&self) -> Self::Type<'_> {
-        BumpImp {
-            chunk: NonNull::from(self).cast(),
-            marker: PhantomData,
-        }
+    fn as_imp(&self) -> &Self::Type {
+        &self.imp
     }
 }
 
 impl AsBumpImp for Unmanaged<'_> {
-    type Type<'a>
-        = Unmanaged<'a>
-    where
-        Self: 'a;
+    type Type = Self;
 
-    fn imp(&self) -> Self::Type<'_> {
-        Unmanaged::VALUE
+    fn as_imp(&self) -> &Self::Type {
+        self
     }
 }

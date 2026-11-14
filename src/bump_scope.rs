@@ -1,6 +1,5 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    cell::Cell,
     fmt,
     marker::PhantomData,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -12,8 +11,7 @@ use alloc::alloc::Global;
 use crate::{
     BumpClaimGuard, BumpScopeGuard, NoDrop,
     bump_align_guard::BumpAlignGuard,
-    bump_imp::{AsBumpImp as _, BumpImp, BumpImpTrait as _},
-    chunk_types::Chunk,
+    bump_imp::{BumpImp, BumpImpTrait as _},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     stats::Stats,
     util::{transmute_mut, transmute_ref, transmute_value},
@@ -38,19 +36,12 @@ use crate::error_mode::panic_on_error;
 /// [`as_bump_scope`]: crate::AsBumpScope::as_bump_scope
 /// [`as_mut_bump_scope`]: crate::AsMutBumpScope::as_mut_bump_scope
 /// [`reset`]: crate::Bump::reset
-#[repr(C)]
+#[repr(transparent)]
 pub struct BumpScope<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    pub(crate) chunk: Cell<Chunk<C>>,
-    pub(crate) allocator_ptr: Cell<*const A>,
+    pub(crate) imp: BumpImp<C, A>,
 
     /// Marks the lifetime of the mutably borrowed `BumpScopeGuard`.
-    pub(crate) marker: PhantomData<&'a ()>,
-}
-
-#[repr(C)]
-pub(crate) struct BumpScopeWithoutLifetime<const C: BumpConfig, A> {
-    pub(crate) chunk: Cell<Chunk<C>>,
-    pub(crate) allocator_ptr: *const A,
+    pub(crate) marker: PhantomData<&'a u8>,
 }
 
 impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> UnwindSafe for BumpScope<'_, C, A> {}
@@ -58,7 +49,7 @@ impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> RefUnwindSafe for BumpSc
 
 impl<const C: BumpConfig, A: Allocator> fmt::Debug for BumpScope<'_, C, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.imp().stats().debug_format("BumpScope", f)
+        self.imp.stats().debug_format("BumpScope", f)
     }
 }
 
@@ -82,11 +73,9 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn by_value(&mut self) -> BumpScope<'_, C, A> {
-        panic_on_error(self.imp().make_allocated());
-
+        panic_on_error(self.imp.make_allocated());
         BumpScope {
-            chunk: Cell::new(self.chunk.get()),
-            allocator_ptr: self.allocator_ptr.clone(),
+            imp: self.imp.create_ref(),
             marker: PhantomData,
         }
     }
@@ -108,11 +97,10 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// [`mut_change_config`]: BumpScope::mut_change_config
     #[inline(always)]
     pub fn try_by_value(&mut self) -> Result<BumpScope<'_, C, A>, AllocError> {
-        self.imp().make_allocated::<AllocError>()?;
+        self.imp.make_allocated::<AllocError>()?;
 
         Ok(BumpScope {
-            chunk: Cell::new(self.chunk.get()),
-            allocator_ptr: self.allocator_ptr.clone(),
+            imp: self.imp.create_ref(),
             marker: PhantomData,
         })
     }
@@ -121,7 +109,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, C, A> {
-        Stats::from_raw_chunk(self.chunk.get())
+        Stats::from_raw_chunk(self.imp.chunk())
     }
 
     /// Converts this `BumpScope` into a `BumpScope` with a new config.
@@ -137,15 +125,15 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, NEW_C, A> {
-        BumpImp::<C, A, true>::const_assert_upwards_matches::<NEW_C>();
+        BumpImp::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         // Since `self` is by value, this can only happen if a claim guard was forgotten.
-        self.imp().assert_convertible_claimable::<NEW_C>();
+        self.imp.assert_convertible_claimable::<NEW_C>();
 
         // No need to check const_constructible, a scope by value must have been created
         // by `(try_)by_value` which always makes it allocated.
 
-        self.imp().align_to(config!(NEW_C, min_align));
+        self.imp.align_to(config!(NEW_C, min_align));
 
         unsafe { transmute_value(self) }
     }
@@ -166,7 +154,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, NEW_C, A> {
-        self.imp().ensure_satisfies_config_for_borrow::<NEW_C>();
+        self.imp.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
 
@@ -184,7 +172,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, NEW_C, A> {
-        self.imp().ensure_satisfies_config_for_borrow_mut::<NEW_C>();
+        self.imp.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
 }
@@ -302,16 +290,16 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// [claimed]: crate::BumpScope::claim
     #[inline(always)]
     pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
-        BumpImp::<C, A, true>::const_assert_upwards_matches::<NEW_C>();
+        BumpImp::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
-        self.imp().assert_convertible_claimable::<NEW_C>();
-        self.imp().assert_convertible_const_constructible::<NEW_C>();
+        self.imp.assert_convertible_claimable::<NEW_C>();
+        self.imp.assert_convertible_const_constructible::<NEW_C>();
 
         // The scope guard will reset the bump pointer to the current position,
         // which is aligned to the current `min_align`.
         let mut guard = self.scope_guard();
         let scope = guard.scope();
-        scope.imp().align_to(config!(NEW_C, min_align));
+        scope.imp.align_to(config!(NEW_C, min_align));
         f(unsafe { transmute_mut(scope) })
     }
 
@@ -401,7 +389,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// ```
     #[inline(always)]
     pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'a, NEW_C, A>) -> R) -> R {
-        BumpImp::<C, A, true>::const_assert_upwards_matches::<NEW_C>();
+        BumpImp::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         const {
             assert!(
@@ -424,7 +412,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
 
             f(bump)
         } else {
-            self.imp().align_to(config!(NEW_C, min_align));
+            self.imp.align_to(config!(NEW_C, min_align));
 
             // SAFETY: we aligned the bump pointer
             let bump = unsafe { transmute_mut(self) };
@@ -473,24 +461,24 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// Returns a reference to the base allocator.
     #[must_use]
     pub fn allocator(&self) -> &A {
-        self.imp().allocator()
+        self.imp.allocator()
     }
 }
 
 unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpScope<'_, C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.imp().allocate(layout)
+        self.imp.allocate(layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { self.imp().deallocate(ptr, layout) };
+        unsafe { self.imp.deallocate(ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp().grow(ptr, old_layout, new_layout) }
+        unsafe { self.imp.grow(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -500,11 +488,11 @@ unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpScope<'_, C, A>
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp().grow_zeroed(ptr, old_layout, new_layout) }
+        unsafe { self.imp.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.imp().shrink(ptr, old_layout, new_layout) }
+        unsafe { self.imp.shrink(ptr, old_layout, new_layout) }
     }
 }

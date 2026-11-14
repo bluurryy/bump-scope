@@ -4,8 +4,7 @@ use alloc::alloc::Global;
 
 use crate::{
     BumpScope,
-    bump_imp::{AsBumpImp, BumpImpTrait as _},
-    bump_scope::BumpScopeWithoutLifetime,
+    bump_imp::{BumpImp, BumpImpTrait as _},
     chunk_types::{Chunk, ErasedChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
     util::transmute_mut,
@@ -41,13 +40,13 @@ impl Checkpoint {
 /// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
 pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    bump: &'a mut BumpScopeWithoutLifetime<C, A>,
+    bump: &'a mut BumpImp<C, A>,
     checkpoint: Checkpoint,
 }
 
 impl<const C: BumpConfig, A: Allocator> Debug for BumpScopeGuard<'_, C, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.bump.imp().stats().debug_format("BumpScopeGuard", f)
+        self.bump.stats().debug_format("BumpScopeGuard", f)
     }
 }
 
@@ -60,8 +59,8 @@ impl<const C: BumpConfig, A: Allocator> Drop for BumpScopeGuard<'_, C, A> {
 
 impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut BumpScopeWithoutLifetime<C, A>) -> Self {
-        let checkpoint = bump.imp().checkpoint();
+    pub(crate) fn new(bump: &'a mut BumpImp<C, A>) -> Self {
+        let checkpoint = bump.checkpoint();
         Self { bump, checkpoint }
     }
 
@@ -74,6 +73,6 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
-        unsafe { self.bump.imp().reset_to(self.checkpoint) }
+        unsafe { self.bump.reset_to(self.checkpoint) }
     }
 }

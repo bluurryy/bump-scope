@@ -244,6 +244,7 @@ extern crate std;
 extern crate alloc;
 
 mod allocator_impl;
+mod base_allocator_storage;
 mod bump;
 mod bump_align_guard;
 mod bump_allocation;

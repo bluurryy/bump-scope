@@ -13,8 +13,8 @@ use crate::{
 };
 
 #[inline(always)]
-pub fn allocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
+pub fn allocate<const C: BumpConfig, A: Allocator>(
+    bump: &BumpImp<C, A>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError> {
     Ok(NonNull::slice_from_raw_parts(
@@ -24,11 +24,7 @@ pub fn allocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
 }
 
 #[inline(always)]
-pub unsafe fn deallocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) {
+pub unsafe fn deallocate<const C: BumpConfig, A: Allocator>(bump: &BumpImp<C, A>, ptr: NonNull<u8>, layout: Layout) {
     if const { !config!(deallocates) } {
         return;
     }
@@ -42,11 +38,7 @@ pub unsafe fn deallocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) {
+unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator>(bump: &BumpImp<C, A>, ptr: NonNull<u8>, layout: Layout) {
     if const { !config!(deallocates) } {
         return;
     }
@@ -74,11 +66,7 @@ unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator, const IS_SCO
 /// chunk since a memory block is only returned from a bump allocator with a non-dummy
 /// chunk.
 #[inline(always)]
-unsafe fn is_last<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) -> bool {
+unsafe fn is_last<const C: BumpConfig, A: Allocator>(bump: &BumpImp<C, A>, ptr: NonNull<u8>, layout: Layout) -> bool {
     if const { config!(upwards) } {
         (unsafe { ptr.add(layout.size()) }) == bump.chunk().pos()
     } else {
@@ -87,8 +75,8 @@ unsafe fn is_last<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
 }
 
 #[inline(always)]
-pub unsafe fn grow<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
+pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
+    bump: &BumpImp<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -173,8 +161,8 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
 }
 
 #[inline(always)]
-pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
+pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator>(
+    bump: &BumpImp<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -194,8 +182,8 @@ pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator, const IS_SCOPE: boo
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub unsafe fn shrink<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-    bump: BumpImp<C, A, IS_SCOPE>,
+pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
+    bump: &BumpImp<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -203,8 +191,8 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
-        bump: BumpImp<C, A, IS_SCOPE>,
+    unsafe fn shrink_unfit<const C: BumpConfig, A: Allocator>(
+        bump: &BumpImp<C, A>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,

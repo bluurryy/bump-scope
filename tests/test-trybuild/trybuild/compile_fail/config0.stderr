@@ -940,7 +940,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $BUMP_SCOPE/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $BUMP_SCOPE/src/allocator_impl.rs
   |
@@ -990,17 +990,17 @@ note: erroneous constant encountered
   |     if const { !config!(deallocates) } {
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate::<0, std::alloc::Global, false>`
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate::<0, std::alloc::Global>`
  --> $BUMP_SCOPE/src/bump_imp.rs
   |
-  |         unsafe { allocator_impl::deallocate(*self, ptr, layout) };
-  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         unsafe { allocator_impl::deallocate(self, ptr, layout) };
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> $BUMP_SCOPE/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::is_last::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::is_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $BUMP_SCOPE/src/allocator_impl.rs
   |
@@ -1050,7 +1050,7 @@ note: erroneous constant encountered
   |     if const { config!(upwards) } {
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::is_last::<0, std::alloc::Global, false>`
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::is_last::<0, std::alloc::Global>`
  --> $BUMP_SCOPE/src/allocator_impl.rs
   |
   |         if is_last(bump, ptr, layout) {
@@ -1060,7 +1060,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $BUMP_SCOPE/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $BUMP_SCOPE/src/allocator_impl.rs
   |
@@ -1108,7 +1108,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $BUMP_SCOPE/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>::{constant#1}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#1}` failed inside this call
   |
  ::: $BUMP_SCOPE/src/allocator_impl.rs
   |
@@ -1158,7 +1158,7 @@ note: erroneous constant encountered
   |
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global, false>`
+note: the above error was encountered while instantiating `fn bump_scope::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>`
  --> $BUMP_SCOPE/src/allocator_impl.rs
   |
   |             deallocate_assume_last(bump, ptr, layout);

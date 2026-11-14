@@ -24,7 +24,7 @@ use crate::{
         boxed_slice_init_fill, boxed_slice_init_fill_with,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    util::{self, SizedTypeProperties, down_align_usize, transmute_mut, up_align_usize_unchecked},
+    util::{self, SizedTypeProperties, down_align_usize, transmute_mut, transmute_ref, up_align_usize_unchecked},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -38,7 +38,7 @@ impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, C, A>
 impl AllocatorNightly for Unmanaged<'_> {}
 
 pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
-    const CONFIG: BumpConfig = <<Self as AsBumpImp>::Type<'_> as BumpImpTrait>::CONFIG;
+    const CONFIG: BumpConfig = <<Self as AsBumpImp>::Type as BumpImpTrait>::CONFIG;
 
     #[inline(always)]
     fn imp_alloc<E, T>(&self, value: T) -> Result<Box<T, &Self>, E>
@@ -72,7 +72,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
         E: ErrorMode,
         T: CloneToUninit + ?Sized,
     {
-        let data = self.imp().alloc(Layout::for_value(value))?;
+        let data = self.as_imp().alloc(Layout::for_value(value))?;
         let metadata = ptr::metadata(value);
 
         unsafe {
@@ -91,7 +91,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             return unsafe { Ok(Box::from_raw_in(ptr::dangling_mut(), self)) };
         }
 
-        let ptr = self.imp().alloc_sized()?.as_ptr();
+        let ptr = self.as_imp().alloc_sized()?.as_ptr();
         unsafe { Ok(Box::from_raw_in(ptr, self)) }
     }
 
@@ -106,7 +106,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
 
             let len = owned_slice_ref.len();
             let src = owned_slice_ref.as_ptr();
-            let dst = self.imp().alloc(Layout::for_value(owned_slice_ref))?.as_ptr().cast();
+            let dst = self.as_imp().alloc(Layout::for_value(owned_slice_ref))?.as_ptr().cast();
             ptr::copy_nonoverlapping(src, dst, len);
 
             owned_slice.take_owned_slice();
@@ -126,7 +126,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
 
         let len = slice.len();
         let src = slice.as_ptr();
-        let dst = self.imp().alloc_slice_for(slice)?.as_ptr();
+        let dst = self.as_imp().alloc_slice_for(slice)?.as_ptr();
 
         unsafe {
             core::ptr::copy_nonoverlapping(src, dst, len);
@@ -169,7 +169,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             return Ok(box_uninit_zst_slice_in(len, self));
         }
 
-        let ptr = self.imp().alloc_slice::<E, MaybeUninit<T>>(len)?.as_ptr();
+        let ptr = self.as_imp().alloc_slice::<E, MaybeUninit<T>>(len)?.as_ptr();
 
         unsafe {
             let slice_ptr = ptr::slice_from_raw_parts_mut(ptr, len);
@@ -186,7 +186,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             return self.imp_alloc_uninit_slice(slice.len());
         }
 
-        let ptr = self.imp().alloc_slice_for(slice)?.cast::<MaybeUninit<T>>().as_ptr();
+        let ptr = self.as_imp().alloc_slice_for(slice)?.cast::<MaybeUninit<T>>().as_ptr();
 
         unsafe {
             let slice_ptr = ptr::slice_from_raw_parts_mut(ptr, slice.len());
@@ -245,7 +245,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             self.imp_alloc_cstr(cstr)
         } else {
             // `src` contains no null
-            let dst = self.imp().alloc_slice::<E, u8>(src.len() + 1)?;
+            let dst = self.as_imp().alloc_slice::<E, u8>(src.len() + 1)?;
 
             unsafe {
                 core::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
@@ -311,14 +311,14 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             };
         }
 
-        let checkpoint_before_alloc = self.imp().checkpoint();
+        let checkpoint_before_alloc = self.as_imp().checkpoint();
         let uninit = self.imp_alloc_uninit::<B, Result<T, E>>()?;
         let ptr = Box::into_raw_with_allocator(uninit).0.cast::<Result<T, E>>();
 
         // When bumping downwards the chunk's position is the same as `ptr`.
         // Using `ptr` is faster so we use that.
         let pos = if config!(Self::CONFIG, upwards) {
-            self.imp().pos()
+            self.as_imp().pos()
         } else {
             ptr.cast::<u8>()
         };
@@ -332,10 +332,10 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
                     let error = error.read();
 
                     // If `f` made allocations on this bump allocator we can't shrink the allocation.
-                    let can_shrink = pos == self.imp().pos();
+                    let can_shrink = pos == self.as_imp().pos();
 
                     if can_shrink {
-                        self.imp().reset_to(checkpoint_before_alloc);
+                        self.as_imp().reset_to(checkpoint_before_alloc);
                     }
 
                     error
@@ -417,7 +417,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
             };
         }
 
-        let ptr = (*self).imp().prepare_sized_allocation::<B, Result<T, E>>()?.as_ptr();
+        let ptr = (*self).as_imp().prepare_sized_allocation::<B, Result<T, E>>()?.as_ptr();
 
         Ok(unsafe {
             ptr.write(f());
@@ -435,7 +435,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
                     };
 
                     // SAFETY: The allocation was successful, so our chunk must be allocated.
-                    self.imp().set_pos(new_pos);
+                    self.as_imp().set_pos(new_pos);
 
                     Box::from_raw_in(value, self)
                 }),
@@ -446,7 +446,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
 }
 impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &A {}
 impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {}
-impl<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpAllocatorPrivate for BumpImp<'_, C, A, IS_SCOPE> {}
+impl<const C: BumpConfig, A: Allocator> BumpAllocatorPrivate for BumpImp<C, A> {}
 impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<C, A> {}
 impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScope<'_, C, A> {}
 impl BumpAllocatorPrivate for Unmanaged<'_> {}
@@ -1689,7 +1689,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     #[must_use]
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
-        self.imp().checkpoint()
+        self.as_imp().checkpoint()
     }
 
     /// Resets the bump position to a previously created checkpoint.
@@ -1728,7 +1728,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// ```
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe { self.imp().reset_to(checkpoint) }
+        unsafe { self.as_imp().reset_to(checkpoint) }
     }
 
     /// Returns true if the bump allocator is currently [claimed].
@@ -1737,7 +1737,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     #[must_use]
     #[inline(always)]
     fn is_claimed(&self) -> bool {
-        self.imp().is_claimed()
+        self.as_imp().is_claimed()
     }
 
     /// Returns the amount of allocated bytes.
@@ -1749,7 +1749,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// [allocated]: crate::stats::Stats::allocated
     #[inline(always)]
     fn allocated(&self) -> usize {
-        self.imp().allocated()
+        self.as_imp().allocated()
     }
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
@@ -1782,7 +1782,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     #[inline]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
-        panic_on_error(self.imp().reserve(additional));
+        panic_on_error(self.as_imp().reserve(additional));
     }
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
@@ -1814,7 +1814,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// [claimed]: crate::BumpScope::claim
     #[inline]
     fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
-        self.imp().reserve(additional)
+        self.as_imp().reserve(additional)
     }
 }
 unsafe impl<T: BumpAllocator> BumpAllocator for &T {}
@@ -2177,8 +2177,7 @@ pub trait AsBumpScope<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = 
 
 impl<A: Allocator, const C: BumpConfig> AsBumpScope<C, A> for Bump<C, A> {
     fn as_bump_scope(&self) -> &BumpScope<'_, C, A> {
-        self.allocator_ptr.set(&raw const self.allocator);
-        unsafe { &*ptr::from_ref(self).cast() }
+        unsafe { transmute_ref(self) }
     }
 }
 
@@ -2218,8 +2217,7 @@ pub trait AsMutBumpScope<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator
 
 impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<C, A> for Bump<C, A> {
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, C, A> {
-        self.allocator_ptr.set(&raw const self.allocator);
-        unsafe { &mut *ptr::from_mut(self).cast() }
+        unsafe { transmute_mut(self) }
     }
 }
 

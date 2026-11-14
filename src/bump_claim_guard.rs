@@ -34,17 +34,16 @@ impl<'b, 'a, const C: BumpConfig, A: Allocator> BumpClaimGuard<'b, 'a, C, A> {
             panic!("bump allocator is already claimed");
         }
 
-        if original.chunk.get().is_claimed() {
+        if original.imp.chunk().is_claimed() {
             already_claimed();
         }
 
         let claimant = BumpScope {
-            chunk: original.chunk.clone(),
-            allocator_ptr: original.allocator_ptr.clone(),
+            imp: original.imp.create_ref(),
             marker: PhantomData,
         };
 
-        original.chunk.set(Chunk::CLAIMED);
+        original.imp.chunk.set(Chunk::CLAIMED);
 
         Self { original, claimant }
     }
@@ -69,6 +68,6 @@ impl<const C: BumpConfig, A: Allocator> DerefMut for BumpClaimGuard<'_, '_, C, A
 impl<const C: BumpConfig, A: Allocator> Drop for BumpClaimGuard<'_, '_, C, A> {
     #[inline(always)]
     fn drop(&mut self) {
-        self.original.chunk.set(self.claimant.chunk.get());
+        self.original.imp.set_chunk(self.claimant.imp.chunk());
     }
 }
