@@ -25,7 +25,7 @@ struct Header<const C: BumpConfig> {
 }
 
 #[repr(transparent)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AllocatedChunk<const C: BumpConfig> {
     header: NonNull<Header<C>>,
 }

@@ -54,7 +54,7 @@ impl<const C: BumpConfig, A: Allocator> fmt::Debug for BumpScope<'_, C, A> {
 }
 
 /// # Create a child scope.
-impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
+impl<const C: BumpConfig, A: Allocator> BumpScope<'_, C, A> {
     /// Calls `f` with a new child scope.
     ///
     /// # Examples
@@ -146,7 +146,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, C, A> {
+    pub fn stats(&self) -> Stats<'a, C> {
         Stats::from_raw_chunk(self.raw.chunk())
     }
 

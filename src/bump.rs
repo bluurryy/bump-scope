@@ -728,7 +728,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, C, A> {
+    pub fn stats(&self) -> Stats<'_, C> {
         self.raw.stats()
     }
 
