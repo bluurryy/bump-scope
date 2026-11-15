@@ -42,7 +42,7 @@ pub struct BumpScope<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator
     pub(crate) marker: PhantomData<&'a u8>,
 }
 
-impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> UnwindSafe for BumpScope<'_, C, A> {}
+impl<const C: BumpConfig, A: Allocator + UnwindSafe + RefUnwindSafe> UnwindSafe for BumpScope<'_, C, A> {}
 impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> RefUnwindSafe for BumpScope<'_, C, A> {}
 
 impl<const C: BumpConfig, A: Allocator> fmt::Debug for BumpScope<'_, C, A> {
