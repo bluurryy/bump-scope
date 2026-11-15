@@ -183,7 +183,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Default for Bump<C, A> {
 }
 
 #[expect(private_bounds)]
-impl<const C: BumpConfig, A: Allocator + GlobalOrSystem> Bump<C, A> {
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
     /// # Compile-Time Assertions
@@ -200,7 +200,10 @@ impl<const C: BumpConfig, A: Allocator + GlobalOrSystem> Bump<C, A> {
     ///
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     #[must_use]
-    pub const fn const_new() -> Self {
+    pub const fn const_new() -> Self
+    where
+        A: GlobalOrSystem,
+    {
         const { assert!(config!(const_constructible)) };
 
         Self {

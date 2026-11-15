@@ -1,0 +1,29 @@
+error[E0277]: `const_new` can only be called with a `Global` or `System` base allocator
+  --> trybuild/compile_fail/const_new_custom_a.rs:21:9
+   |
+21 |     _ = <Bump<DEFAULT_BUMP_CONFIG, MyAllocator>>::const_new();
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ allocator type not supported
+   |
+help: the trait `bump_scope::global_or_system::GlobalOrSystem` is not implemented for `MyAllocator`
+  --> trybuild/compile_fail/const_new_custom_a.rs:8:1
+   |
+ 8 | struct MyAllocator;
+   | ^^^^^^^^^^^^^^^^^^
+   = note: You can still const-construct a `Bump` using `const_new_in`
+help: the following other types implement trait `bump_scope::global_or_system::GlobalOrSystem`
+  --> $BUMP_SCOPE/src/global_or_system.rs
+   |
+   | impl GlobalOrSystem for Global {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::alloc::Global`
+...
+   | impl GlobalOrSystem for System {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `System`
+note: required by a bound in `Bump::<C, A>::const_new`
+  --> $BUMP_SCOPE/src/bump.rs
+   |
+   | impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
+...
+   |     pub const fn const_new() -> Self
+   |     where
+   |         A: GlobalOrSystem,
+   |            ^^^^^^^^^^^^^^ required by this bound in `Bump::<C, A>::const_new`

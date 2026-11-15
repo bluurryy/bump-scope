@@ -4,9 +4,11 @@ use alloc::alloc::Global;
 use std::alloc::System;
 
 /// Temporary solution for [`Bump::const_new`] until we have `const Default`.
-///
-/// We could make this a public `ConstDefault` trait.
-/// Currently it's just named `GlobalOrSystem` to give context to this private bound.
+#[diagnostic::on_unimplemented(
+    message = "`const_new` can only be called with a `Global` or `System` base allocator",
+    label = "allocator type not supported",
+    note = "You can still const-construct a `Bump` using `const_new_in`"
+)]
 pub(crate) trait GlobalOrSystem {
     const CONST_DEFAULT: Self;
 }
