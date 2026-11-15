@@ -5,6 +5,7 @@ use std::{
 
 use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
 
+#[derive(Default)]
 struct MyAllocator;
 
 unsafe impl Allocator for MyAllocator {

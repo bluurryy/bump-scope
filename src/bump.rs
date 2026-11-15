@@ -32,10 +32,10 @@ use crate::error_mode::panic_on_error;
 /// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
 ///
 /// # Create a `Bump` ...
+/// - without allocating a chunk: <code>[const_new]\([_in][const_new_in])</code>
 /// - with the [`default_initial_chunk_size`]: <code>[new]\([_in][new_in])</code>
 /// - with a size: <code>[with_size]\([_in][with_size_in])</code>
 /// - with a capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
-/// - without allocating a chunk: <code>[const_new]\([_in][const_new_in])</code>
 /// - with `default`, which acts like `const_new` if [`const_constructible`] or `new` if not
 ///
 /// # Allocate ...
@@ -182,8 +182,8 @@ impl<const C: BumpConfig, A: Allocator + Default> Default for Bump<C, A> {
     }
 }
 
-#[expect(private_bounds)]
-impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
+/// # Construct a `Bump` with a default base allocator.
+impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
     /// # Compile-Time Assertions
@@ -200,6 +200,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     ///
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     #[must_use]
+    #[expect(private_bounds)]
     pub const fn const_new() -> Self
     where
         A: GlobalOrSystem,
@@ -210,37 +211,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
             raw: RawBump::const_new(A::CONST_DEFAULT),
         }
     }
-}
 
-impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
-    /// Constructs a new `Bump` without allocating a chunk.
-    ///
-    /// # Compile-Time Assertions
-    /// Fails to compile when not [`const_constructible`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use std::alloc::System as MyAllocator;
-    /// use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
-    ///
-    /// let bump: Bump<DEFAULT_BUMP_CONFIG, MyAllocator> = Bump::const_new_in(MyAllocator);
-    /// # _ = bump;
-    /// ```
-    ///
-    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
-    #[must_use]
-    pub const fn const_new_in(allocator: A) -> Self {
-        const { assert!(config!(const_constructible)) };
-
-        Self {
-            raw: RawBump::const_new(allocator),
-        }
-    }
-}
-
-/// Methods for a `Bump` with a default base allocator.
-impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
     /// This is equivalent to <code>[with_size][]([default_initial_chunk_size])</code>.
@@ -393,13 +364,31 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     }
 }
 
-/// Methods that are always available.
+/// # Construct a `Bump` with the provided base allocator.
 impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
-    #[inline(always)]
-    pub(crate) fn new_allocated<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
-        Ok(Self {
-            raw: RawBump::new(size, allocator)?,
-        })
+    /// Constructs a new `Bump` without allocating a chunk.
+    ///
+    /// # Compile-Time Assertions
+    /// Fails to compile when not [`const_constructible`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::alloc::System as MyAllocator;
+    /// use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
+    ///
+    /// let bump: Bump<DEFAULT_BUMP_CONFIG, MyAllocator> = Bump::const_new_in(MyAllocator);
+    /// # _ = bump;
+    /// ```
+    ///
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
+    #[must_use]
+    pub const fn const_new_in(allocator: A) -> Self {
+        const { assert!(config!(const_constructible)) };
+
+        Self {
+            raw: RawBump::const_new(allocator),
+        }
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
@@ -561,6 +550,37 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         Self::new_allocated(ChunkSizeCapacity(layout), allocator)
     }
 
+    #[inline(always)]
+    pub(crate) fn new_allocated<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
+        Ok(Self {
+            raw: RawBump::new(size, allocator)?,
+        })
+    }
+}
+
+/// # Create a child scope.
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
+    /// Forwards to [`BumpScope::scoped`].
+    #[inline(always)]
+    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<C, A>) -> R) -> R {
+        self.as_mut_bump_scope().scoped(f)
+    }
+
+    /// Forwards to [`BumpScope::scope_guard`].
+    #[inline(always)]
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
+        self.as_mut_bump_scope().scope_guard()
+    }
+}
+
+/// # Miscellaneous.
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
+    /// Forwards to [`BumpScope::claim`].
+    #[inline(always)]
+    pub fn claim(&self) -> BumpClaimGuard<'_, '_, C, A> {
+        self.as_bump_scope().claim()
+    }
+
     /// Resets this bump allocator and deallocates all but the largest chunk.
     ///
     /// This deallocates all allocations at once by resetting
@@ -712,6 +732,60 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         self.raw.stats()
     }
 
+    /// Forwards to [`BumpScope::allocator`].
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        self.raw.allocator()
+    }
+
+    /// Converts this `Bump` into a raw pointer.
+    ///
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// bump.alloc_str("Hello, ").into_ref();
+    ///
+    /// let (ptr, alloc) = bump.into_raw_parts();
+    /// let bump: Bump = unsafe { Bump::from_raw_parts(ptr, alloc) };
+    ///
+    /// bump.alloc_str("World!").into_ref();
+    /// # assert_eq!(bump.allocated(), 13);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn into_raw_parts(self) -> (NonNull<()>, A) {
+        destructure!(let Self { raw } = self);
+        destructure!(let RawBump<C, A> { chunk, allocator } = raw);
+        let ptr = chunk.get().as_ptr();
+        // SAFETY: safe to call from `Bump`, because it stores the base allocator
+        let alloc = unsafe { allocator.into_inner() };
+        (ptr, alloc)
+    }
+
+    /// Converts the raw pointer that was created with [`into_raw_parts`] back into a `Bump`.
+    ///
+    /// # Safety
+    /// - `ptr` and `allocator` must come from the same call to [`into_raw_parts`].
+    /// - This function must only be called once with this `ptr`.
+    /// - The config must match the original one.
+    ///
+    /// [`into_raw_parts`]: Bump::into_raw_parts
+    #[inline]
+    #[must_use]
+    pub unsafe fn from_raw_parts(ptr: NonNull<()>, allocator: A) -> Self {
+        Self {
+            raw: RawBump {
+                chunk: Cell::new(unsafe { Chunk::from_ptr(ptr.cast()) }),
+                allocator: BaseAllocatorStorage::new(allocator),
+            },
+        }
+    }
+}
+
+/// # Change config parameters.
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// Converts this `Bump` into a `Bump` with a new config.
     ///
     /// # Panics
@@ -775,88 +849,16 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         unsafe { transmute_mut(self) }
     }
 
-    /// Converts this `Bump` into a raw pointer.
-    ///
-    /// ```
-    /// use bump_scope::{Bump, BumpAllocator};
-    /// let bump: Bump = Bump::new();
-    ///
-    /// bump.alloc_str("Hello, ").into_ref();
-    ///
-    /// let (ptr, alloc) = bump.into_raw_parts();
-    /// let bump: Bump = unsafe { Bump::from_raw_parts(ptr, alloc) };
-    ///
-    /// bump.alloc_str("World!").into_ref();
-    /// # assert_eq!(bump.allocated(), 13);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn into_raw_parts(self) -> (NonNull<()>, A) {
-        destructure!(let Self { raw } = self);
-        destructure!(let RawBump<C, A> { chunk, allocator } = raw);
-        let ptr = chunk.get().as_ptr();
-        // SAFETY: safe to call from `Bump`, because it stores the base allocator
-        let alloc = unsafe { allocator.into_inner() };
-        (ptr, alloc)
-    }
-
-    /// Converts the raw pointer that was created with [`into_raw_parts`] back into a `Bump`.
-    ///
-    /// # Safety
-    /// - `ptr` and `allocator` must come from the same call to [`into_raw_parts`].
-    /// - This function must only be called once with this `ptr`.
-    /// - The config must match the original one.
-    ///
-    /// [`into_raw_parts`]: Bump::into_raw_parts
-    #[inline]
-    #[must_use]
-    pub unsafe fn from_raw_parts(ptr: NonNull<()>, allocator: A) -> Self {
-        Self {
-            raw: RawBump {
-                chunk: Cell::new(unsafe { Chunk::from_ptr(ptr.cast()) }),
-                allocator: BaseAllocatorStorage::new(allocator),
-            },
-        }
-    }
-}
-
-/// Additional `alloc` methods that are not available in traits.
-impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
-    /// Forwards to [`BumpScope::allocator`].
-    #[must_use]
+    /// Forwards to [`BumpScope::with_config`].
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.raw.allocator()
-    }
-
-    /// Forwards to [`BumpScope::claim`].
-    #[inline(always)]
-    pub fn claim(&self) -> BumpClaimGuard<'_, '_, C, A> {
-        self.as_bump_scope().claim()
-    }
-
-    /// Forwards to [`BumpScope::scope_guard`].
-    #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
-        self.as_mut_bump_scope().scope_guard()
-    }
-
-    /// Forwards to [`BumpScope::scoped`].
-    #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<C, A>) -> R) -> R {
-        self.as_mut_bump_scope().scoped(f)
+    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, NEW_C, A>) -> R) -> R {
+        self.as_mut_bump_scope().with_config(f)
     }
 
     /// Forwards to [`BumpScope::scoped_with_config`].
     #[inline(always)]
     pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
         self.as_mut_bump_scope().scoped_with_config::<NEW_C, R>(f)
-    }
-
-    /// Forwards to [`BumpScope::with_config`].
-    #[inline(always)]
-    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, NEW_C, A>) -> R) -> R {
-        self.as_mut_bump_scope().with_config(f)
     }
 }
 

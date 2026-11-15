@@ -53,7 +53,109 @@ impl<const C: BumpConfig, A: Allocator> fmt::Debug for BumpScope<'_, C, A> {
     }
 }
 
+/// # Create a child scope.
 impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
+    /// Calls `f` with a new child scope.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// bump.scoped(|bump| {
+    ///     bump.alloc_str("Hello, world!").into_ref();
+    ///     assert_eq!(bump.allocated(), 13);
+    /// });
+    ///
+    /// assert_eq!(bump.allocated(), 0);
+    /// ```
+    ///
+    /// [claimed]: crate::BumpScope::claim
+    #[inline(always)]
+    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, C, A>) -> R) -> R {
+        let mut guard = self.scope_guard();
+        f(guard.scope())
+    }
+
+    /// Creates a new [`BumpScopeGuard`].
+    ///
+    /// This allows for creation of child scopes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// {
+    ///     let mut guard = bump.scope_guard();
+    ///     let bump = guard.scope();
+    ///     bump.alloc_str("Hello, world!").into_ref();
+    ///     assert_eq!(bump.allocated(), 13);
+    /// }
+    ///
+    /// assert_eq!(bump.allocated(), 0);
+    /// ```
+    ///
+    /// [claimed]: crate::BumpScope::claim
+    #[inline(always)]
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
+        BumpScopeGuard::new(unsafe { transmute_mut(self) })
+    }
+}
+
+/// # Miscellaneous.
+impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
+    /// Claims exclusive access to the bump allocator from a shared reference.
+    ///
+    /// This makes it possible to enter scopes while a there are still outstanding
+    /// references to that bump allocator.
+    ///
+    /// The `claim` call replaces this allocator with a dummy allocator while the returned `BumpClaimGuard`
+    /// is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink` and
+    /// reports an empty bump allocator from the `stats` api.
+    ///
+    /// # Panics
+    /// Panics if the bump allocator is already claimed.
+    ///
+    /// # Compile-Time Assertions
+    /// Fails to compile when not [`claimable`].
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, extra};
+    ///
+    /// let bump: Bump = Bump::new();
+    /// let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
+    /// let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
+    ///
+    /// bump.claim().scoped(|bump| {
+    ///     // ...
+    ///     # _ = bump;
+    /// });
+    ///
+    /// assert_eq!(vec1, [1, 2, 3]);
+    /// assert_eq!(vec2, [4, 5, 6]);
+    /// ```
+    ///
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    pub fn claim(&self) -> BumpClaimGuard<'_, 'a, C, A> {
+        BumpClaimGuard::new(self)
+    }
+
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'a, C, A> {
+        Stats::from_raw_chunk(self.raw.chunk())
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    pub fn allocator(&self) -> &A {
+        self.raw.allocator()
+    }
+
     /// Converts this `&mut BumpScope` into an owned `BumpScope`.
     ///
     /// Allocates a chunk if none has been allocated yet.
@@ -104,14 +206,10 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
             marker: PhantomData,
         })
     }
+}
 
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, C, A> {
-        Stats::from_raw_chunk(self.raw.chunk())
-    }
-
+/// # Change config parameters.
+impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// Converts this `BumpScope` into a `BumpScope` with a new config.
     ///
     /// # Panics
@@ -174,133 +272,6 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, NEW_C, A> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
-    }
-}
-
-impl<const C: BumpConfig, A: Allocator> NoDrop for BumpScope<'_, C, A> {}
-
-/// Additional `alloc` methods that are not available in traits.
-impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
-    /// Creates a new [`BumpScopeGuard`].
-    ///
-    /// This allows for creation of child scopes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bump_scope::{Bump, BumpAllocator};
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// {
-    ///     let mut guard = bump.scope_guard();
-    ///     let bump = guard.scope();
-    ///     bump.alloc_str("Hello, world!").into_ref();
-    ///     assert_eq!(bump.allocated(), 13);
-    /// }
-    ///
-    /// assert_eq!(bump.allocated(), 0);
-    /// ```
-    ///
-    /// [claimed]: crate::BumpScope::claim
-    #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
-        BumpScopeGuard::new(unsafe { transmute_mut(self) })
-    }
-
-    /// Calls `f` with a new child scope.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, BumpAllocator};
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump| {
-    ///     bump.alloc_str("Hello, world!").into_ref();
-    ///     assert_eq!(bump.allocated(), 13);
-    /// });
-    ///
-    /// assert_eq!(bump.allocated(), 0);
-    /// ```
-    ///
-    /// [claimed]: crate::BumpScope::claim
-    #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, C, A>) -> R) -> R {
-        let mut guard = self.scope_guard();
-        f(guard.scope())
-    }
-
-    /// Calls `f` on a child scope with a new config.
-    ///
-    /// # Compile-Time Assertions
-    /// - Fails to compile if [`upwards`] changes
-    ///
-    /// # Panics
-    ///
-    /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
-    ///
-    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
-    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
-    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
-    ///
-    /// const CONFIG_MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new()
-    ///     .min_align(8)
-    ///     .build();
-    ///
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// // bump starts off by being aligned to 16
-    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 16 == 0);
-    ///
-    /// // allocate one byte
-    /// bump.alloc(1u8).into_ref();
-    ///
-    /// // now the bump is only aligned to 1
-    /// // (if our `MIN_ALIGN` was higher, it would be that)
-    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 2 == 1);
-    /// assert_eq!(bump.allocated(), 1);
-    ///
-    /// bump.scoped_with_config::<CONFIG_MIN_ALIGN_8, ()>(|bump| {
-    ///    // in here, the bump will have the specified minimum alignment of 8
-    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.allocated(), 8);
-    ///
-    ///    // allocating a value with its size being a multiple of 8 will no longer have
-    ///    // to align the bump pointer before allocation
-    ///    bump.alloc(1u64).into_ref();
-    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.allocated(), 16);
-    ///    
-    ///    // allocating a value smaller than the minimum alignment must align the bump pointer
-    ///    // after the allocation, resulting in some wasted space
-    ///    bump.alloc(1u8).into_ref();
-    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.allocated(), 24);
-    /// });
-    ///
-    /// assert_eq!(bump.allocated(), 1);
-    /// ```
-    ///
-    /// [claimed]: crate::BumpScope::claim
-    #[inline(always)]
-    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
-        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
-
-        self.raw.assert_convertible_claimable::<NEW_C>();
-        self.raw.assert_convertible_const_constructible::<NEW_C>();
-
-        // The scope guard will reset the bump pointer to the current position,
-        // which is aligned to the current `min_align`.
-        let mut guard = self.scope_guard();
-        let scope = guard.scope();
-        scope.raw.align_to(config!(NEW_C, min_align));
-        f(unsafe { transmute_mut(scope) })
     }
 
     /// Calls `f` with this scope but with a new config.
@@ -421,49 +392,82 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
         }
     }
 
-    /// Claims exclusive access to the bump allocator from a shared reference.
-    ///
-    /// This makes it possible to enter scopes while a there are still outstanding
-    /// references to that bump allocator.
-    ///
-    /// The `claim` call replaces this allocator with a dummy allocator while the returned `BumpClaimGuard`
-    /// is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink` and
-    /// reports an empty bump allocator from the `stats` api.
-    ///
-    /// # Panics
-    /// Panics if the bump allocator is already claimed.
+    /// Calls `f` on a child scope with a new config.
     ///
     /// # Compile-Time Assertions
-    /// Fails to compile when not [`claimable`].
+    /// - Fails to compile if [`upwards`] changes
+    ///
+    /// # Panics
+    ///
+    /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
+    ///
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     /// # Examples
+    ///
     /// ```
-    /// use bump_scope::{Bump, extra};
+    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
     ///
-    /// let bump: Bump = Bump::new();
-    /// let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
-    /// let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
+    /// const CONFIG_MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new()
+    ///     .min_align(8)
+    ///     .build();
     ///
-    /// bump.claim().scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// // bump starts off by being aligned to 16
+    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 16 == 0);
+    ///
+    /// // allocate one byte
+    /// bump.alloc(1u8).into_ref();
+    ///
+    /// // now the bump is only aligned to 1
+    /// // (if our `MIN_ALIGN` was higher, it would be that)
+    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 2 == 1);
+    /// assert_eq!(bump.allocated(), 1);
+    ///
+    /// bump.scoped_with_config::<CONFIG_MIN_ALIGN_8, ()>(|bump| {
+    ///    // in here, the bump will have the specified minimum alignment of 8
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
+    ///    assert_eq!(bump.allocated(), 8);
+    ///
+    ///    // allocating a value with its size being a multiple of 8 will no longer have
+    ///    // to align the bump pointer before allocation
+    ///    bump.alloc(1u64).into_ref();
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
+    ///    assert_eq!(bump.allocated(), 16);
+    ///    
+    ///    // allocating a value smaller than the minimum alignment must align the bump pointer
+    ///    // after the allocation, resulting in some wasted space
+    ///    bump.alloc(1u8).into_ref();
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
+    ///    assert_eq!(bump.allocated(), 24);
     /// });
     ///
-    /// assert_eq!(vec1, [1, 2, 3]);
-    /// assert_eq!(vec2, [4, 5, 6]);
+    /// assert_eq!(bump.allocated(), 1);
     /// ```
     ///
-    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    pub fn claim(&self) -> BumpClaimGuard<'_, 'a, C, A> {
-        BumpClaimGuard::new(self)
-    }
+    /// [claimed]: crate::BumpScope::claim
+    #[inline(always)]
+    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    pub fn allocator(&self) -> &A {
-        self.raw.allocator()
+        self.raw.assert_convertible_claimable::<NEW_C>();
+        self.raw.assert_convertible_const_constructible::<NEW_C>();
+
+        // The scope guard will reset the bump pointer to the current position,
+        // which is aligned to the current `min_align`.
+        let mut guard = self.scope_guard();
+        let scope = guard.scope();
+        scope.raw.align_to(config!(NEW_C, min_align));
+        f(unsafe { transmute_mut(scope) })
     }
 }
+
+impl<const C: BumpConfig, A: Allocator> NoDrop for BumpScope<'_, C, A> {}
 
 unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpScope<'_, C, A> {
     #[inline(always)]
