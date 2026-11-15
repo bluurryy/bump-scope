@@ -24,8 +24,6 @@ use crate::error_mode::panic_on_error;
 ///
 /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard` or `scoped` closure.
 ///
-/// `BumpScope` has mostly same api as [`Bump`].
-///
 /// This type is provided as a parameter to the closure of [`scoped`], or created
 /// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
 /// [`as_bump_scope`] and [`as_mut_bump_scope`].
@@ -160,7 +158,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     ///
     /// Allocates a chunk if none has been allocated yet.
     ///
-    /// This can be used to remove an indirection, simplify type signatures and allow
+    /// This can be used to remove an indirection and allow
     /// for more config conversions via [`change_config`].
     ///
     /// # Panics
@@ -186,7 +184,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     ///
     /// Allocates a chunk if none has been allocated yet.
     ///
-    /// This can be used to remove an indirection, simplify type signatures and allow
+    /// This can be used to remove an indirection and allow
     /// for more config conversions via [`change_config`].
     ///
     /// # Errors

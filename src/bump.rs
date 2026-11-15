@@ -29,7 +29,7 @@ use crate::error_mode::panic_on_error;
 ///
 /// # Generic parameters
 /// - **`C`** — the bump allocator config, see [`config`](crate::config)
-/// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
+/// - **`A`** — the base allocator, defaults to `Global`
 ///
 /// # Create a `Bump` ...
 /// - without allocating a chunk: <code>[const_new]\([_in][const_new_in])</code>
