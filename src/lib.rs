@@ -7,7 +7,15 @@
 #![no_std]
 #![cfg_attr(
     feature = "nightly",
-    feature(clone_to_uninit, ptr_metadata, allocator_ext, doc_notable_trait)
+    feature(
+        clone_to_uninit,
+        ptr_metadata,
+        allocator_ext,
+        doc_notable_trait,
+        const_trait_impl,
+        specialization,
+        trivial_clone,
+    )
 )]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![cfg_attr(docsrs,
@@ -43,6 +51,7 @@
 #![cfg_attr(feature = "nightly", allow(
     clippy::incompatible_msrv,
     invalid_doc_attributes, // false positive for doc_notable_trait
+    incomplete_features, // for specialization
 ))]
 //! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
@@ -221,6 +230,7 @@
 //!   - Implements `AllocatorNightly` for our bump allocators
 //!   - Adds `BumpAllocator::alloc_clone`
 //!   - Promises symbolic alignment to miri for bump allocations
+//!   - Reduces the size of `Bump(Scope)` when the base allocator is `AllocatorClone + TriviallyClone`
 //! <!-- feature documentation end -->
 //!
 //! # MSRV policy

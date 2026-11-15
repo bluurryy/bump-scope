@@ -182,6 +182,7 @@ vec.reserve(123);
   - Implements `AllocatorNightly` for our bump allocators
   - Adds `BumpAllocator::alloc_clone`
   - Promises symbolic alignment to miri for bump allocations
+  - Reduces the size of `Bump(Scope)` when the base allocator is `AllocatorClone + TriviallyClone`
 <!-- feature documentation end -->
 
 ## MSRV policy

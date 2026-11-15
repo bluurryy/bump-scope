@@ -5,15 +5,15 @@ pub(crate) enum BaseAllocatorStorageEnum<A> {
     Ref(NonNull<A>),
 }
 
+use BaseAllocatorStorageEnum::{Owned, Ref};
+
 pub(crate) struct BaseAllocatorStorage<A> {
     inner: BaseAllocatorStorageEnum<A>,
 }
 
 impl<A> BaseAllocatorStorage<A> {
     pub(crate) const fn new(alloc: A) -> Self {
-        Self {
-            inner: BaseAllocatorStorageEnum::Owned(alloc),
-        }
+        Self { inner: Owned(alloc) }
     }
 
     /// # Safety
@@ -23,9 +23,9 @@ impl<A> BaseAllocatorStorage<A> {
     /// [`create_ref`]: BaseAllocatorStorage::create_ref
     pub(crate) unsafe fn into_inner(self) -> A {
         match self.inner {
-            BaseAllocatorStorageEnum::Owned(a) => a,
+            Owned(a) => a,
             // SAFETY: callee must hold up the safety conditions
-            BaseAllocatorStorageEnum::Ref(_) => unsafe { unreachable_unchecked() },
+            Ref(_) => unsafe { unreachable_unchecked() },
         }
     }
 }
@@ -35,7 +35,7 @@ impl<A> BaseAllocatorStorage<A> {
         let r: &A = self;
 
         BaseAllocatorStorage {
-            inner: BaseAllocatorStorageEnum::Ref(NonNull::from_ref(r)),
+            inner: Ref(NonNull::from_ref(r)),
         }
     }
 }
@@ -45,17 +45,8 @@ impl<A> Deref for BaseAllocatorStorage<A> {
 
     fn deref(&self) -> &Self::Target {
         match &self.inner {
-            BaseAllocatorStorageEnum::Owned(a) => a,
-            // SAFETY: when constructing this variant
-            BaseAllocatorStorageEnum::Ref(a) => unsafe { a.as_ref() },
-        }
-    }
-}
-
-impl<A: Default> Default for BaseAllocatorStorage<A> {
-    fn default() -> Self {
-        Self {
-            inner: BaseAllocatorStorageEnum::Owned(A::default()),
+            Owned(a) => a,
+            Ref(a) => unsafe { a.as_ref() },
         }
     }
 }
