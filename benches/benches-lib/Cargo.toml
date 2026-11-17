@@ -5,5 +5,5 @@ edition = "2024"
 [dependencies]
 blink-alloc = { version = "0.4.0", features = ["nightly"] }
 bump-scope = { path = "../.." }
-bumpalo = { version = "3.20.3", features = ["allocator_api"] }
+bumpalo = { version = "3.20.4", features = ["allocator_api"] }
 pastey = "0.2.3"
