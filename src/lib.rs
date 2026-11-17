@@ -17,6 +17,7 @@
         trivial_clone,
     )
 )]
+#![cfg_attr(all(feature = "nightly", feature = "panic-on-alloc"), feature(vec_repeat))]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![warn(
     clippy::pedantic,

@@ -204,7 +204,7 @@ update-bench-results:
 [group('doc')]
 doc *args:
     cargo +nightly fmt
-    cargo insert-docs --all-features --allow-dirty --skip-doc-links bump_scope
+    cargo insert-docs --all-features --allow-dirty --skip-doc-links=bump_scope --toolchain=nightly
     nu -c "open src/lib.rs | str replace --regex '(?<=<!--msrv start-->).*(?=<!--msrv end-->)' (open Cargo.toml | get package.rust-version) | save -f src/lib.rs"
     @ just doc-rustdoc {{ args }}
 

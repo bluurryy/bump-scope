@@ -1,5 +1,5 @@
 #![cfg(test)]
-#![cfg_attr(feature = "nightly", feature(allocator_ext, clone_to_uninit, offset_of_enum))]
+#![cfg_attr(feature = "nightly", feature(clone_to_uninit, offset_of_enum))]
 mod alloc_clone;
 mod alloc_cstr;
 mod alloc_fmt;
