@@ -139,8 +139,8 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline]
     #[must_use]
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn get(&self) -> BumpPoolGuard<'_, C, A> {
         let bump = match self.lock().pop() {
@@ -163,7 +163,7 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    #[inline(always)]
+    #[inline]
     pub fn try_get(&self) -> Result<BumpPoolGuard<'_, C, A>, AllocError> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
@@ -185,8 +185,8 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline]
     #[must_use]
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, C, A> {
         let bump = match self.lock().pop() {
@@ -209,7 +209,7 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    #[inline(always)]
+    #[inline]
     pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, C, A>, AllocError> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
@@ -231,8 +231,8 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline]
     #[must_use]
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, C, A> {
         let bump = match self.lock().pop() {
@@ -255,7 +255,7 @@ impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    #[inline(always)]
+    #[inline]
     pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, C, A>, AllocError> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
