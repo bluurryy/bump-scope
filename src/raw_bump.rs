@@ -665,7 +665,7 @@ impl<const C: BumpConfig, A: Allocator> RawBumpTrait for RawBump<C, A> {
             let chunk = self
                 .stats()
                 .small_to_big()
-                .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
+                .find(|chunk| chunk.as_ptr().addr() == checkpoint.chunk.as_ptr().addr())
                 .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
             let start = chunk.content_start().addr().get();

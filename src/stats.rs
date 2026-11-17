@@ -154,7 +154,7 @@ impl<'a, const C: BumpConfig> Stats<'a, C> {
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Chunk<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
-    pub(crate) chunk: AllocatedChunk<C>,
+    chunk: AllocatedChunk<C>,
     marker: PhantomData<&'a ()>,
 }
 
@@ -169,7 +169,7 @@ impl<const C: BumpConfig> fmt::Debug for Chunk<'_, C> {
 
 impl<'a, const C: BumpConfig> Chunk<'a, C> {
     #[cfg(debug_assertions)]
-    pub(crate) fn header(self) -> NonNull<()> {
+    pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.chunk.as_ptr()
     }
 

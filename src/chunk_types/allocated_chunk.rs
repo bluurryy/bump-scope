@@ -34,6 +34,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
     pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<C>>();
 
     #[inline(always)]
+    #[cfg(debug_assertions)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
