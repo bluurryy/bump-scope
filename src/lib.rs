@@ -238,6 +238,9 @@
 //! It can happen in any release.
 //! The MSRV is currently **<!--msrv start-->1.100.0<!--msrv end-->**.
 //!
+//! # Alternatives
+//! Check out the [Arenas] post by jdonszelmann.
+//!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
 //! [`new`]: Bump::new
 //! [`Allocator`]: core::alloc::Allocator
@@ -246,6 +249,7 @@
 //! [`scoped`]: crate::BumpScope::scoped
 //! [`scope_guard`]: crate::BumpScope::scope_guard
 //! [`claim`]: crate::BumpScope::claim
+//! [Arenas]: https://donsz.nl/blog/arenas
 //! <!-- crate documentation rest end -->
 
 #[cfg(any(feature = "std", test))]

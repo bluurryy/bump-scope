@@ -20,6 +20,7 @@ A fast bump allocator that supports allocation scopes / checkpoints. Aka an aren
 - [Overview](#overview)
 - [Scopes and Checkpoints](#scopes-and-checkpoints)
 - [Feature Flags](#feature-flags)
+- [Alternatives](#alternatives)
 - [Contributing](#contributing)
 
 <!-- crate documentation rest start -->
@@ -190,9 +191,13 @@ Increasing the minimum supported rust version is not considered a breaking chang
 It can happen in any release.
 The MSRV is currently **<!--msrv start-->1.100.0<!--msrv end-->**.
 
+## Alternatives
+Check out the [Arenas] post by jdonszelmann.
+
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
 [`Allocator`]: https://doc.rust-lang.org/core/alloc/trait.Allocator.html
+[Arenas]: https://donsz.nl/blog/arenas
 <!-- crate documentation rest end -->
 
 ## Contributing
