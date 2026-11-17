@@ -9,7 +9,7 @@ use std::{
 use alloc::alloc::Global;
 
 use crate::{
-    AsBumpScope as _, AsMutBumpScope as _, Bump, BumpScope,
+    AsBumpScope as _, AsMutBumpScope as _, Bump, BumpAllocator, BumpScope,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
 
@@ -122,6 +122,12 @@ impl<const C: BumpConfig, A: Allocator> BumpPool<C, A> {
     /// Returns the vector of `Bump`s.
     pub fn bumps(&mut self) -> &mut Vec<Bump<C, A>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Returns the amount of allocated bytes.
+    /// This includes padding and wasted space due to reallocations.
+    pub fn allocated(&mut self) -> usize {
+        self.bumps().iter().map(BumpAllocator::allocated).sum()
     }
 
     fn lock(&self) -> MutexGuard<'_, Vec<Bump<C, A>>> {

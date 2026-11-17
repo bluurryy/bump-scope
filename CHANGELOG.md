@@ -18,6 +18,7 @@ I plan to release `bump-scope-core` in the near future, which will be `no-alloc`
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
 - Add `default_initial_chunk_size` configuration parameter
 - Implement `TakeOwnedSlice` for `BoxedArrayIntoIter`
+- Add `BumpPool::allocated()`
 
 ### Changed
 
