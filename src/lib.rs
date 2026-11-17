@@ -18,10 +18,7 @@
     )
 )]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
-#![cfg_attr(docsrs,
-    feature(doc_cfg),
-    doc(auto_cfg(hide(feature, values("panic-on-alloc")))) // too noisy
-)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
