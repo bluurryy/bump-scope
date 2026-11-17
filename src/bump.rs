@@ -118,8 +118,10 @@ pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global
     pub(crate) raw: RawBump<C, A>,
 }
 
-// Sending Bumps when nothing is allocated is fine.
-// When something is allocated Bump is borrowed and sending is not possible.
+/// There is no aliasing.
+/// Allocated memory blocks stay valid.
+// NB: That means you could (unsafely but soundly) allocate a memory block
+//     on one thread and later deallocate it on another.
 unsafe impl<const C: BumpConfig, A> Send for Bump<C, A> where A: Send + Allocator {}
 
 impl<const C: BumpConfig, A: Allocator + UnwindSafe> UnwindSafe for Bump<C, A> {}
