@@ -18,7 +18,6 @@
     )
 )]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
-#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
