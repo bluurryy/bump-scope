@@ -25,6 +25,14 @@
     clippy::perf,
     clippy::style,
     clippy::suspicious,
+    clippy::as_pointer_underscore,
+    clippy::as_ptr_cast_mut,
+    clippy::assigning_clones,
+    clippy::dbg_macro,
+    clippy::debug_assert_with_mut_call,
+    clippy::else_if_without_else,
+    clippy::empty_drop,
+    clippy::infinite_loop,
     missing_docs,
     rustdoc::missing_crate_level_docs
 )]

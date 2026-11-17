@@ -101,7 +101,7 @@ mod safe_cast {
     macro_rules! safe_cast {
         ($name:ident: $from:ident -> $to:ident) => {
             pub(super) const fn $name(v: $from) -> $to {
-                if $to::BITS < $from::BITS {
+                if const { $to::BITS < $from::BITS } {
                     assert!(v < ($to::MAX as $from));
                 }
 
@@ -110,7 +110,17 @@ mod safe_cast {
         };
     }
 
+    macro_rules! known_safe_cast {
+        ($name:ident: $from:ident -> $to:ident) => {
+            pub(super) const fn $name(v: $from) -> $to {
+                const { assert!($to::BITS >= $from::BITS) };
+                v as $to
+            }
+        };
+    }
+
     safe_cast!(u128_as_usize: u128 -> usize);
+    known_safe_cast!(u32_as_u128: u32 -> u128);
 }
 
 /// We set the msb to 1 so that you can't accidentally write `Bump<4>` expecting it to perhaps mean minimum alignment.
@@ -258,6 +268,7 @@ macro_rules! bit_fields {
                 (bits & MASK) >> SHIFT
             }
 
+            #[warn(clippy::as_conversions)]
             pub(crate) const fn encode(bits: u128, $en_val: $ty) -> u128 {
                 if_exists!($($vl_val)? {
                     validate($en_val);
@@ -267,6 +278,7 @@ macro_rules! bit_fields {
                 write(bits, value_bits)
             }
 
+            #[warn(clippy::as_conversions)]
             pub(crate) const fn decode(bits: u128) -> $ty {
                 let $de_val = read(bits);
 
@@ -315,7 +327,7 @@ bit_fields! {
     min_align: usize {
         default: 1,
         bits: 3,
-        encode: |v| v.highest_one().expect("due to validation, min_align is not zero") as u128,
+        encode: |v| u32_as_u128(v.highest_one().expect("due to validation, min_align is not zero")),
         decode: |v| u128_as_usize(1 << v),
         validate: |v| {
             assert!(v.is_power_of_two(), "min_align must be a power of two");
@@ -422,7 +434,7 @@ bit_fields! {
     default_initial_chunk_size: usize {
         default: 1024,
         bits: 6,
-        encode: |v| v.highest_one().expect("due to validation, default_initial_chunk_size is not zero") as u128,
+        encode: |v| u32_as_u128(v.highest_one().expect("due to validation, default_initial_chunk_size is not zero")),
         decode: |v| u128_as_usize(1 << v),
         validate: |v| {
             assert!(v.is_power_of_two(), "default_initial_chunk_size must be a power of two");
