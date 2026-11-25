@@ -15,8 +15,7 @@ use alloc::{boxed::Box, vec::Vec};
 use crate::{
     error_mode::ErrorMode,
     extra::{imp_vec_extend, imp_vec_into_boxed_slice_without_shrink},
-    raw_bump::RawBumpTrait as _,
-    traits::BumpAllocatorPrivate,
+    traits::{BumpAllocatorPrivate, CoreBumpScopeTrait},
     util::SizedTypeProperties,
 };
 
@@ -79,7 +78,7 @@ where
 
             if !T::IS_ZST
                 && len < cap
-                && let Some(new_ptr) = alloc.as_raw().shrink_slice(NonNull::new_unchecked(ptr), cap, len)
+                && let Some(new_ptr) = alloc.core().shrink_slice(NonNull::new_unchecked(ptr), cap, len)
             {
                 ptr = new_ptr.as_ptr();
                 cap = len;

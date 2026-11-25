@@ -52,9 +52,10 @@ The introduction of scopes makes this bump allocator also great for temporary al
 - Implements `core`'s `Allocator` and takes an `Allocator`.
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Has helper methods in `BumpAllocator` for safely allocating values, slices, strings, collecting iterators, formatting, etc.
-- Very fast, see [./benches][benches].
+- Very fast, see [benches].
 - Provides configuration options to let you optimize the bump allocator for your application.
 - Supports parallel bump allocation with a `BumpPool`.
+- [bump-scope-core] provides a more stable api but has none of the helper methods
 
 ## Scopes and Checkpoints
 
@@ -64,6 +65,7 @@ Entering and exiting scopes is virtually free. Allocating within a scope has no 
 You can create a new scope either with a `scoped` closure or with a `scope_guard`:
 ```rust
 use bump_scope::{Bump, BumpAllocator};
+
 let mut bump: Bump = Bump::new();
 
 // you can use a closure

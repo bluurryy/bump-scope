@@ -7,11 +7,9 @@ use std::{
 };
 
 use alloc::alloc::Global;
+use bump_scope_core::config::{BumpConfig, DEFAULT_BUMP_CONFIG};
 
-use crate::{
-    AsBumpScope as _, AsMutBumpScope as _, Bump, BumpAllocator, BumpScope,
-    config::{BumpConfig, DEFAULT_BUMP_CONFIG},
-};
+use crate::{AsBumpScope as _, AsMutBumpScope as _, Bump, BumpAllocator, BumpScope};
 
 /// A pool of bump allocators.
 ///

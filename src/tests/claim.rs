@@ -70,41 +70,41 @@ up_and_down! {
         // traits::Sealed
         {
             // allocate_layout
-            expect_panic(|| bump.raw.alloc::<!>(Layout::new::<()>()));
-            expect_panic(|| bump.raw.alloc::<!>(Layout::new::<u8>()));
-            expect_err(bump.raw.alloc::<AllocError>(Layout::new::<()>()));
-            expect_err(bump.raw.alloc::<AllocError>(Layout::new::<u8>()));
+            expect_panic(|| bump.core.alloc::<!>(Layout::new::<()>()));
+            expect_panic(|| bump.core.alloc::<!>(Layout::new::<u8>()));
+            expect_err(bump.core.alloc::<AllocError>(Layout::new::<()>()));
+            expect_err(bump.core.alloc::<AllocError>(Layout::new::<u8>()));
 
             // allocate sized
-            expect_panic(|| bump.raw.alloc_sized::<!, ()>());
-            expect_panic(|| bump.raw.alloc_sized::<!, u8>());
-            expect_err(bump.raw.alloc_sized::<AllocError, ()>());
-            expect_err(bump.raw.alloc_sized::<AllocError, u8>());
+            expect_panic(|| bump.core.alloc_sized::<!, ()>());
+            expect_panic(|| bump.core.alloc_sized::<!, u8>());
+            expect_err(bump.core.alloc_sized::<AllocError, ()>());
+            expect_err(bump.core.alloc_sized::<AllocError, u8>());
 
             // allocate slice
-            expect_panic(|| bump.raw.alloc_slice::<!, ()>(123));
-            expect_panic(|| bump.raw.alloc_slice::<!, u8>(0));
-            expect_panic(|| bump.raw.alloc_slice::<!, u8>(1));
-            expect_err(bump.raw.alloc_slice::<AllocError, ()>(123));
-            expect_err(bump.raw.alloc_slice::<AllocError, u8>(0));
-            expect_err(bump.raw.alloc_slice::<AllocError, u8>(1));
+            expect_panic(|| bump.core.alloc_slice::<!, ()>(123));
+            expect_panic(|| bump.core.alloc_slice::<!, u8>(0));
+            expect_panic(|| bump.core.alloc_slice::<!, u8>(1));
+            expect_err(bump.core.alloc_slice::<AllocError, ()>(123));
+            expect_err(bump.core.alloc_slice::<AllocError, u8>(0));
+            expect_err(bump.core.alloc_slice::<AllocError, u8>(1));
 
             // allocate slice for
-            expect_panic(|| bump.raw.alloc_slice_for::<!, ()>(&[(), (), ()]));
-            expect_panic(|| bump.raw.alloc_slice_for::<!, u8>(&[]));
-            expect_panic(|| bump.raw.alloc_slice_for::<!, u8>(&[1]));
-            expect_err(bump.raw.alloc_slice_for::<AllocError, ()>(&[(), (), ()]));
-            expect_err(bump.raw.alloc_slice_for::<AllocError, u8>(&[]));
-            expect_err(bump.raw.alloc_slice_for::<AllocError, u8>(&[1]));
+            expect_panic(|| bump.core.alloc_slice_for::<!, ()>(&[(), (), ()]));
+            expect_panic(|| bump.core.alloc_slice_for::<!, u8>(&[]));
+            expect_panic(|| bump.core.alloc_slice_for::<!, u8>(&[1]));
+            expect_err(bump.core.alloc_slice_for::<AllocError, ()>(&[(), (), ()]));
+            expect_err(bump.core.alloc_slice_for::<AllocError, u8>(&[]));
+            expect_err(bump.core.alloc_slice_for::<AllocError, u8>(&[1]));
 
             // shrink slice
-            assert!(unsafe { bump.raw.shrink_slice(ptr, 2, 1) }.is_none());
+            assert!(unsafe { bump.core.shrink_slice(ptr, 2, 1) }.is_none());
 
             // prepare slice allocation
-            expect_panic(|| bump.raw.prepare_slice::<!, ()>(123));
-            expect_panic(|| bump.raw.prepare_slice::<!, u8>(123));
-            expect_err(bump.raw.prepare_slice::<AllocError, ()>(123));
-            expect_err(bump.raw.prepare_slice::<AllocError, u8>(123));
+            expect_panic(|| bump.core.prepare_slice::<!, ()>(123));
+            expect_panic(|| bump.core.prepare_slice::<!, u8>(123));
+            expect_err(bump.core.prepare_slice::<AllocError, ()>(123));
+            expect_err(bump.core.prepare_slice::<AllocError, u8>(123));
 
             // dealloc
             drop(extra::box_replace_allocator(boxed, &bump));

@@ -1,11 +1,11 @@
 error[E0080]: evaluation panicked: assertion failed: config!(const_constructible)
- --> $BUMP_SCOPE/src/bump.rs
+ --> $WORKSPACE/src/bump.rs
   |
   |         const { assert!(config!(const_constructible)) };
   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::Bump::<185531151349166460822651694835692470272>::const_new::{constant#0}` failed here
 
 note: erroneous constant encountered
- --> $BUMP_SCOPE/src/bump.rs
+ --> $WORKSPACE/src/bump.rs
   |
   |         const { assert!(config!(const_constructible)) };
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

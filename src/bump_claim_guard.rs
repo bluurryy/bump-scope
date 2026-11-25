@@ -6,11 +6,12 @@ use core::{
 
 use alloc::alloc::Global;
 
-use crate::{
-    BumpScope,
-    chunk_types::Chunk,
-    config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
+use bump_scope_core::{
+    BumpClaimGuard as CoreBumpClaimGuard,
+    config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
+
+use crate::BumpScope;
 
 // For docs.
 #[allow(unused_imports)]
@@ -19,34 +20,8 @@ use crate::traits::*;
 /// Returned from [`BumpScope::claim`].
 #[must_use]
 pub struct BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    pub(crate) original: &'b BumpScope<'a, C, A>,
-    pub(crate) claimant: BumpScope<'a, C, A>,
-}
-
-impl<'b, 'a, const C: BumpConfig, A: Allocator> BumpClaimGuard<'b, 'a, C, A> {
-    #[inline(always)]
-    pub(crate) fn new(original: &'b BumpScope<'a, C, A>) -> Self {
-        assert!(config!(claimable), "`claim` is only available when `claimable` is enabled");
-
-        #[cold]
-        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
-        fn already_claimed() {
-            panic!("bump allocator is already claimed");
-        }
-
-        if original.raw.chunk().is_claimed() {
-            already_claimed();
-        }
-
-        let claimant = BumpScope {
-            raw: original.raw.create_ref(),
-            marker: PhantomData,
-        };
-
-        original.raw.chunk.set(Chunk::CLAIMED);
-
-        Self { original, claimant }
-    }
+    pub(crate) core: CoreBumpClaimGuard<'b, C, A>,
+    marker: PhantomData<&'a u8>,
 }
 
 impl<'a, const C: BumpConfig, A: Allocator> Deref for BumpClaimGuard<'_, 'a, C, A> {
@@ -54,20 +29,25 @@ impl<'a, const C: BumpConfig, A: Allocator> Deref for BumpClaimGuard<'_, 'a, C, 
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
-        &self.claimant
+        // SAFETY: we use the valid 'a lifetime we used for construction
+        unsafe { BumpScope::ref_from_core(&self.core) }
     }
 }
 
 impl<const C: BumpConfig, A: Allocator> DerefMut for BumpClaimGuard<'_, '_, C, A> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.claimant
+        // SAFETY: we use the valid 'a lifetime we used for construction
+        unsafe { BumpScope::mut_from_core(&mut self.core) }
     }
 }
 
-impl<const C: BumpConfig, A: Allocator> Drop for BumpClaimGuard<'_, '_, C, A> {
+impl<'b, 'a, const C: BumpConfig, A: Allocator> BumpClaimGuard<'b, 'a, C, A> {
     #[inline(always)]
-    fn drop(&mut self) {
-        self.original.raw.set_chunk(self.claimant.raw.chunk());
+    pub(crate) fn new(original: &'b BumpScope<'a, C, A>) -> Self {
+        Self {
+            core: original.as_ref().claim(),
+            marker: PhantomData,
+        }
     }
 }

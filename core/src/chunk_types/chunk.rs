@@ -72,7 +72,7 @@ impl<const C: BumpConfig> Chunk<C> {
             } else if self.is_claimed() {
                 ChunkKind::Claimed
             } else {
-                ChunkKind::Allocated(transmute(self))
+                ChunkKind::Allocated(transmute::<Chunk<C>, AllocatedChunk<C>>(self))
             }
         }
     }

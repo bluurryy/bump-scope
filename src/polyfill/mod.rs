@@ -2,5 +2,4 @@
 #![expect(clippy::pedantic)]
 
 pub(crate) mod hint;
-pub(crate) mod non_null;
 pub(crate) mod slice;

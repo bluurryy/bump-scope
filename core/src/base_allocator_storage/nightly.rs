@@ -1,6 +1,4 @@
-use core::{clone::TrivialClone, ops::Deref};
-
-use alloc::alloc::AllocatorClone;
+use core::{alloc::AllocatorClone, clone::TrivialClone, ops::Deref};
 
 pub(crate) struct BaseAllocatorStorage<A> {
     inner: <A as BaseAllocatorStorageType>::Storage,
@@ -106,9 +104,7 @@ mod default {
 }
 
 mod clone {
-    use core::ops::Deref;
-
-    use alloc::alloc::AllocatorClone;
+    use core::{alloc::AllocatorClone, ops::Deref};
 
     use crate::base_allocator_storage::nightly::{BaseAllocatorStorageMethods, BaseAllocatorStorageNew};
 

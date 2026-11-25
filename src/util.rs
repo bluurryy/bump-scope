@@ -1,9 +1,21 @@
-use core::{alloc::Layout, mem::ManuallyDrop, num::NonZeroUsize, ptr};
+use core::{alloc::Layout, mem::ManuallyDrop, ptr};
+
 #[cfg(test)]
 use core::{
     alloc::{AllocError, Allocator},
     ptr::NonNull,
 };
+
+macro_rules! config {
+    ($config:expr, $name:ident) => {
+        const { ::bump_scope_core::config::read::$name($config) }
+    };
+    ($name:ident) => {
+        const { ::bump_scope_core::config::read::$name(C) }
+    };
+}
+
+pub(crate) use config;
 
 #[inline(always)]
 pub(crate) unsafe fn ptr_result<T, E>(ptr: *mut Result<T, E>) -> Result<*mut T, *mut E> {
@@ -51,12 +63,6 @@ pub(crate) fn down_align_usize(addr: usize, align: usize) -> usize {
     addr & !mask
 }
 
-#[inline(always)]
-pub(crate) fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
-    let subtracted = addr.get().saturating_sub(size);
-    down_align_usize(subtracted, align)
-}
-
 pub(crate) trait SizedTypeProperties: Sized {
     const SIZE: usize = size_of::<Self>();
     const ALIGN: usize = align_of::<Self>();
@@ -67,26 +73,7 @@ pub(crate) trait SizedTypeProperties: Sized {
 
 impl<T> SizedTypeProperties for T {}
 
-/// Aligns a bump address to the `min_align`.
-///
-/// This is a noop when `min_align` is `0`.
-#[must_use]
-#[inline(always)]
-pub(crate) fn align_pos(up: bool, min_align: usize, pos: usize) -> usize {
-    if up {
-        // Aligning an address that is `<= range.end` with an alignment
-        // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
-        // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
-        up_align_usize_unchecked(pos, min_align)
-    } else {
-        // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
-        // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
-        // and stay non-zero.
-        down_align_usize(pos, min_align)
-    }
-}
-
-// Used for static assertions.
+/// Used for static assertions.
 #[cfg(test)]
 #[derive(Default, Clone)]
 pub(crate) struct NoopAllocator;

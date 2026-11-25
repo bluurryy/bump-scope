@@ -4,7 +4,8 @@
 //!
 //! You can configure the bump allocator config with a [`BumpConfigBuilder`]:
 //! ```
-//! use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+//! use alloc::alloc::Global;
+//! use bump_scope_core::config::{BumpConfig, BumpConfigBuilder};
 //!
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
 //!     .min_align(8)
@@ -16,10 +17,11 @@
 //!     .default_initial_chunk_size(4096)
 //!     .build();
 //!
-//! type MyBump = Bump<MY_CONFIG>;
+//! type Bump = bump_scope_core::Bump<MY_CONFIG, Global>;
 //!
-//! let bump = MyBump::new();
+//! let bump = Bump::new_in(Global)?;
 //! assert_eq!(bump.stats().size(), 4096);
+//! # Ok::<(), !>(())
 //! ```
 #![deny(clippy::cast_possible_truncation)]
 
@@ -338,16 +340,12 @@ bit_fields! {
     /// Sets the bump direction.
     ///
     /// Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-    /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][mut_alloc_iter])</code> and <code>[alloc_fmt][]([_mut][mut_alloc_fmt])</code>.
+    /// This benefits growable collections as well as `alloc_iter(_mut)` and `alloc_fmt(_mut)`.
     ///
     /// Bumping downwards can be done in less instructions.
     ///
     /// For the performance impact see [benches].
     ///
-    /// [alloc_iter]: crate::traits::BumpAllocator::alloc_iter
-    /// [mut_alloc_iter]: crate::traits::MutBumpAllocator::mut_alloc_iter
-    /// [alloc_fmt]: crate::traits::BumpAllocator::alloc_fmt
-    /// [mut_alloc_fmt]: crate::traits::MutBumpAllocator::mut_alloc_fmt
     /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
     upwards: bool {
         default: true,
@@ -356,23 +354,10 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Enables the <code>[const_new][const_new]([_in][const_new_in])</code> constructors.
+    /// Enables the `const_new` constructors.
     ///
     /// Setting `const_constructible` to `false` removes some checks and code paths for handling
-    /// the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
-    ///
-    /// [const_new]: crate::Bump::const_new
-    /// [const_new_in]: crate::Bump::const_new_in
-    /// [new]: crate::Bump::new
-    /// [new_in]: crate::Bump::new_in
-    /// [default]: crate::Bump::default
-    /// [with_size]: crate::Bump::with_size
-    /// [`with_size`]: crate::Bump::with_size
-    /// [with_size_in]: crate::Bump::with_size_in
-    /// [with_capacity]: crate::Bump::with_capacity
-    /// [with_capacity_in]: crate::Bump::with_capacity_in
-    /// [`reset_to`]: crate::traits::BumpAllocator::reset_to
-    /// [`by_value`]: crate::BumpScope::by_value
+    /// the no-chunk-allocated state when exiting scopes, calling `reset_to` or `by_value`.
     const_constructible: bool {
         default: true,
         bits: 1,
@@ -406,12 +391,6 @@ bit_fields! {
     ///
     /// When this is `false`, [`Allocator::shrink`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
-    ///
-    /// This also affects [`alloc_iter`], [`alloc_fmt`] and [`alloc_cstr_fmt`].
-    ///
-    /// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
-    /// [`alloc_fmt`]: crate::traits::BumpAllocator::alloc_fmt
-    /// [`alloc_cstr_fmt`]: crate::traits::BumpAllocator::alloc_cstr_fmt
     shrinks: bool {
         default: true,
         bits: 1,
@@ -421,16 +400,8 @@ bit_fields! {
 
     /// Sets the default initial chunk size.
     ///
-    /// This value will be used when creating a [`Bump`] with
-    /// <code>[new][new]([_in][new_in])</code> or when a
-    /// <code>[const_new][const_new]([_in][const_new_in])</code>-constructed
-    /// [`Bump`] allocates its first chunk.
-    ///
-    /// [`Bump`]: crate::Bump
-    /// [new]: crate::Bump::new
-    /// [new_in]: crate::Bump::new_in
-    /// [const_new]: crate::Bump::const_new
-    /// [const_new_in]: crate::Bump::const_new_in
+    /// This value will be used when creating a `Bump` with `new` or when a `const_new`-constructed
+    /// allocator allocates its first chunk.
     default_initial_chunk_size: usize {
         default: 1024,
         bits: 6,

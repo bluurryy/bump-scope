@@ -7,12 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-*With this release, `bump-scope` becomes dependent on the `alloc` crate. 
-I plan to release `bump-scope-core` in the near future, which will be `no-alloc`.*
-
 ### Added
 
-- Use the now stable `core` allocator api
+- Use the now stable `core::alloc::Allocator` api
 - Any `Allocator` can now be used as the base allocator (including for const construction)
 - Add `const_new` and `const_new_in` to const construct `Bump`s
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
@@ -22,6 +19,7 @@ I plan to release `bump-scope-core` in the near future, which will be `no-alloc`
 
 ### Changed
 
+- **Breaking:** `bump-scope` becomes dependent on the `alloc` crate (`bump-scope-core` does not)
 - **Breaking:** Moved the `alloc_*` methods from `Bump(Scope)` to the `BumpAllocator` trait
 - **Breaking:** Change `alloc_*` methods to now return a `BumpAllocation<T, &Self>` type instead of `BumpBox<'_, T>`
 - **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic

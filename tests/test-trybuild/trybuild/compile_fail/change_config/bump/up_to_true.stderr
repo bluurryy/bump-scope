@@ -2,25 +2,25 @@ error[E0080]: evaluation panicked: can't change bump direction
  --> $RUST/core/src/panic.rs
   |
   |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<180214239366026797331036466594571091968, std::alloc::Global>::const_assert_upwards_matches::<190848063332306124314266923076813848576>::{constant#0}` failed here
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::util::const_assert_upwards_matches::<180214239366026797331036466594571091968, 190848063332306124314266923076813848576>::{constant#0}` failed here
   |
- ::: $BUMP_SCOPE/src/raw_bump.rs
+ ::: $WORKSPACE/core/src/util.rs
   |
-  |             assert!(old == new, "can't change bump direction");
-  |             -------------------------------------------------- in this macro invocation
+  |         assert!(old == new, "can't change bump direction");
+  |         -------------------------------------------------- in this macro invocation
 
 note: erroneous constant encountered
- --> $BUMP_SCOPE/src/raw_bump.rs
+ --> $WORKSPACE/core/src/util.rs
   |
-  | /         const {
-  | |             let old = config!(upwards);
-  | |             let new = config!(NEW_C, upwards);
-  | |             assert!(old == new, "can't change bump direction");
-  | |         }
-  | |_________^
+  | /     const {
+  | |         let old = config!(upwards);
+  | |         let new = config!(NEW_C, upwards);
+  | |         assert!(old == new, "can't change bump direction");
+  | |     }
+  | |_____^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<180214239366026797331036466594571091968, std::alloc::Global>::const_assert_upwards_matches::<190848063332306124314266923076813848576>`
- --> $BUMP_SCOPE/src/bump.rs
+note: the above error was encountered while instantiating `fn bump_scope_core::util::const_assert_upwards_matches::<180214239366026797331036466594571091968, 190848063332306124314266923076813848576>`
+ --> $WORKSPACE/core/src/bump.rs
   |
-  |         RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         const_assert_upwards_matches::<C, NEW_C>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

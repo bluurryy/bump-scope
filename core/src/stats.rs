@@ -12,9 +12,7 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
 
-/// Provides statistics about the memory usage of the bump allocator.
-///
-/// This is returned from [`Bump(Scope)::stats`](crate::Bump::stats).
+/// Provides stats about the memory usage of the bump allocator.
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct Stats<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
     chunk: Option<Chunk<'a, C>>,
@@ -293,7 +291,7 @@ pub struct ChunkPrevIter<'a, const C: BumpConfig> {
 impl<'a, const C: BumpConfig> Iterator for ChunkPrevIter<'a, C> {
     type Item = Chunk<'a, C>;
 
-    #[inline(always)]
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let chunk = self.chunk?;
         self.chunk = chunk.prev();
@@ -319,7 +317,7 @@ pub struct ChunkNextIter<'a, const C: BumpConfig> {
 impl<'a, const C: BumpConfig> Iterator for ChunkNextIter<'a, C> {
     type Item = Chunk<'a, C>;
 
-    #[inline(always)]
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let chunk = self.chunk?;
         self.chunk = chunk.next();

@@ -1,0 +1,14 @@
+[package]
+name = "bump-scope-core"
+edition = "2024"
+
+[features]
+default = ["alloc"]
+
+## Makes use of [`alloc::alloc::handle_alloc_error`] when appropriate.
+alloc = []
+
+## Enables nightly features. ***This feature is exempt from semver.***
+## - Promises symbolic alignment to miri for bump allocations
+## - Reduces the size of `Bump(Scope)` when the base allocator is `AllocatorClone + TriviallyClone`
+nightly = []

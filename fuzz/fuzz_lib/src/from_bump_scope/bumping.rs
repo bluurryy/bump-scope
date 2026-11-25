@@ -1,1 +1,1 @@
-../../../../src/bumping.rs
+../../../../core/src/bumping.rs

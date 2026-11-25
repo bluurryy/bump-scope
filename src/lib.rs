@@ -7,15 +7,7 @@
 #![no_std]
 #![cfg_attr(
     feature = "nightly",
-    feature(
-        clone_to_uninit,
-        ptr_metadata,
-        allocator_ext,
-        doc_notable_trait,
-        const_trait_impl,
-        specialization,
-        trivial_clone,
-    )
+    feature(clone_to_uninit, ptr_metadata, allocator_ext, doc_notable_trait, const_trait_impl,)
 )]
 #![cfg_attr(all(feature = "nightly", feature = "panic-on-alloc"), feature(vec_repeat))]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
@@ -37,13 +29,8 @@
     missing_docs,
     rustdoc::missing_crate_level_docs
 )]
-#![expect(
-    clippy::inline_always,
-    clippy::module_name_repetitions,
-    clippy::copy_iterator,
-    clippy::items_after_statements,
-    clippy::missing_transmute_annotations
-)]
+#![deny(unconditional_recursion)]
+#![expect(clippy::inline_always)]
 #![allow(
     clippy::wildcard_imports, // `expect` is broken for this lint
     clippy::collapsible_else_if, // this is not `expect` because nightly as of 2025-12-28 doesn't warn about this for some reason
@@ -97,9 +84,10 @@
 //! - Implements `core`'s `Allocator` and takes an `Allocator`.
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 //! - Has helper methods in [`BumpAllocator`] for safely allocating values, slices, strings, collecting iterators, formatting, etc.
-//! - Very fast, see [./benches][benches].
+//! - Very fast, see [benches].
 //! - Provides configuration options to let you optimize the bump allocator for your application.
 //! - Supports parallel bump allocation with a [`BumpPool`].
+//! - [bump-scope-core] provides a more stable api but has none of the helper methods
 //!
 //! # Scopes and Checkpoints
 //!
@@ -109,7 +97,7 @@
 //! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
 //! ```
 //! use bump_scope::{Bump, BumpAllocator};
-
+//!
 //! let mut bump: Bump = Bump::new();
 //!
 //! // you can use a closure
@@ -255,6 +243,7 @@
 //! [`scope_guard`]: crate::BumpScope::scope_guard
 //! [`claim`]: crate::BumpScope::claim
 //! [Arenas]: https://donsz.nl/blog/arenas
+//! [bump-scope-core]: bump_scope_core
 //! <!-- crate documentation rest end -->
 
 #[cfg(any(feature = "std", test))]
@@ -262,28 +251,19 @@ extern crate std;
 
 extern crate alloc;
 
-mod allocator_impl;
-mod base_allocator_storage;
 mod bump;
-mod bump_align_guard;
 mod bump_allocation;
 mod bump_claim_guard;
 #[cfg(feature = "std")]
 mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
-mod bumping;
 mod bytemuck_and_zerocopy;
-pub(crate) mod chunk_size;
-pub(crate) mod chunk_size_config;
-pub(crate) mod chunk_types;
-pub mod config;
 mod containers;
 mod destructure;
 mod error_mode;
 pub mod extra;
 mod global_or_system;
-mod layout;
 mod macros;
 mod no_drop;
 mod owned_slice;
@@ -291,25 +271,22 @@ mod polyfill;
 /// This is not part of the public api. This module is semver-exempt!
 #[doc(hidden)]
 pub mod private;
-mod raw_bump;
-pub mod stats;
 #[cfg(test)]
 mod tests;
 mod traits;
 mod unmanaged;
 mod util;
 
-use alloc::{boxed::Box, vec::Vec};
+pub use bump_scope_core::{self, Checkpoint, config, stats};
+
 pub use bump::Bump;
 pub use bump_allocation::BumpAllocation;
 pub use bump_claim_guard::BumpClaimGuard;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
-pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
+pub use bump_scope_guard::BumpScopeGuard;
 pub use no_drop::NoDrop;
-#[cfg(feature = "panic-on-alloc")]
-use private::capacity_overflow;
 pub use traits::{AsBumpScope, AsMutBumpScope, BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
 pub use unmanaged::Unmanaged;
 
@@ -324,6 +301,8 @@ pub type BoxU<'a, T> = Box<T, Unmanaged<'a>>;
 
 /// A `Vec` without an allocator, alias for <code>Vec<T, [Unmanaged]<'a>></code>.
 pub type VecU<'a, T> = Vec<T, Unmanaged<'a>>;
+
+use alloc::{boxed::Box, vec::Vec};
 
 /// The changelog.
 ///

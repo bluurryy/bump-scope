@@ -1,5 +1,6 @@
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
+
 host := `rustc --print host-tuple`
 pwd := `pwd`
 
@@ -204,16 +205,17 @@ update-bench-results:
 [group('doc')]
 doc *args:
     cargo +nightly fmt
-    cargo insert-docs --all-features --allow-dirty --skip-doc-links=bump_scope --toolchain=nightly
+    cargo insert-docs feature-into-crate --all-features --allow-dirty --skip-doc-links=bump_scope,bump_scope_core --toolchain=nightly -p bump-scope-core
+    cargo insert-docs --all-features --allow-dirty --skip-doc-links=bump_scope,bump_scope_core --toolchain=nightly -p bump-scope
     nu -c "open src/lib.rs | str replace --regex '(?<=<!--msrv start-->).*(?=<!--msrv end-->)' (open Cargo.toml | get package.rust-version) | save -f src/lib.rs"
     @ just doc-rustdoc {{ args }}
 
 # Run `rustdoc` like on `docs.rs`.
 [group('doc')]
 doc-rustdoc *args:
-    cargo +nightly rustdoc {{ args }} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings
+    RUSTDOCFLAGS="--cfg=docsrs -Z unstable-options --generate-link-to-definition -Dwarnings" cargo +nightly doc --all-features {{ args }}
 
 # Run `rustdoc` like on `docs.rs`, but with private items.
 [group('doc')]
 doc-rustdoc-private *args:
-    cargo +nightly rustdoc {{ args }} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings --document-private-items
+    cargo +nightly doc --all-features {{ args }} -- --document-private-items

@@ -209,6 +209,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 
+    #[inline(always)]
     pub(crate) fn new_first<E: ErrorMode, A: Allocator>(chunk_size: impl ChunkSize, allocator: &A) -> Result<Self, E> {
         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
         Self::new_chunk_with_layout(chunk_layout, None, allocator)

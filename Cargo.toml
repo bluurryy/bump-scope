@@ -1,3 +1,6 @@
+[workspace]
+members = ["core", "fuzz", "fuzz/fuzz_lib", "tests/*"]
+
 [package]
 name = "bump-scope"
 version = "3.0.0-dev"
@@ -41,6 +44,7 @@ pre-release-replacements = [
 ]
 
 [dependencies]
+bump-scope-core = { path = "./core" }
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 
@@ -71,4 +75,4 @@ zerocopy-08 = ["dep:zerocopy-08"]
 ## - Adds `BumpAllocator::alloc_clone`
 ## - Promises symbolic alignment to miri for bump allocations
 ## - Reduces the size of `Bump(Scope)` when the base allocator is `AllocatorClone + TriviallyClone`
-nightly = []
+nightly = ["bump-scope-core/nightly"]
