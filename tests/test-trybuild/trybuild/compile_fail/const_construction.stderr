@@ -10,7 +10,7 @@ note: erroneous constant encountered
   |         const { assert!(config!(const_constructible)) };
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn Bump::<185531151349166460822651694835692470272>::const_new`
+note: the above error was encountered while instantiating `fn bump_scope::Bump::<185531151349166460822651694835692470272>::const_new`
  --> trybuild/compile_fail/const_construction.rs:9:9
   |
 9 |     _ = <Bump<CONFIG>>::const_new();

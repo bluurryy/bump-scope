@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_size::Constants::<0, std::alloc::Global>::CONFIG::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_size::Constants::<0, std::alloc::Global>::CONFIG::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_size.rs
   |
@@ -68,7 +68,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::new_chunk_with_layout::<!, std::alloc::Global>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::new_chunk_with_layout::<!, std::alloc::Global>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -128,7 +128,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope_core::layout::ArrayLayout>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::bump_scope_core::layout::ArrayLayout>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -182,7 +182,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::ArrayLayout>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::ArrayLayout>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -217,7 +217,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::ArrayLayout>::{constant#1}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::ArrayLayout>::{constant#1}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -278,7 +278,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::ArrayLayout>::{constant#2}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::ArrayLayout>::{constant#2}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -332,7 +332,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::is_unallocated::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::is_unallocated::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -386,7 +386,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::is_claimed::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::is_claimed::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -440,7 +440,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_start::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_start::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -494,7 +494,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_start::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_start::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -548,7 +548,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_end::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::content_end::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -602,7 +602,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_end::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::chunk_end::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -668,7 +668,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope_core::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope::bump_scope_core::chunk_size::ChunkSize>::layout::<0, std::alloc::Global>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_size.rs
   |
@@ -722,7 +722,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::reset::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::reset::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -776,7 +776,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope_core::layout::CustomLayout>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::alloc::<bump_scope::bump_scope_core::layout::CustomLayout>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -817,7 +817,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::CustomLayout>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::CustomLayout>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -852,7 +852,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::CustomLayout>::{constant#1}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::CustomLayout>::{constant#1}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -887,7 +887,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope_core::layout::CustomLayout>::{constant#2}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::chunk::Chunk::<0>::bump_props::<bump_scope::bump_scope_core::layout::CustomLayout>::{constant#2}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/chunk.rs
   |
@@ -940,7 +940,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::allocator_impl::deallocate::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::allocator_impl::deallocate::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/allocator_impl.rs
   |
@@ -1000,7 +1000,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::allocator_impl::is_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::allocator_impl::is_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/allocator_impl.rs
   |
@@ -1060,7 +1060,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#0}::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/allocator_impl.rs
   |
@@ -1108,7 +1108,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#1}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::allocator_impl::deallocate_assume_last::<0, std::alloc::Global>::{constant#1}` failed inside this call
   |
  ::: $WORKSPACE/core/src/allocator_impl.rs
   |
@@ -1168,7 +1168,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
@@ -1216,7 +1216,7 @@ error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#1}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::chunk_types::allocated_chunk::AllocatedChunk::<0>::set_pos_addr_and_align::{constant#1}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |

@@ -18,7 +18,7 @@ help: the following other types implement trait `bump_scope::global_or_system::G
 ...
    | impl GlobalOrSystem for System {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `System`
-note: required by a bound in `Bump::<C, A>::const_new`
+note: required by a bound in `bump_scope::Bump::<C, A>::const_new`
   --> $WORKSPACE/src/bump.rs
    |
    | impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {

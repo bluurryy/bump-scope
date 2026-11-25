@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: can't change bump direction
  --> $RUST/core/src/panic.rs
   |
   |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope_core::util::const_assert_upwards_matches::<180214239366026797331036466594571091968, 190848063332306124314266923076813848576>::{constant#0}` failed here
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_scope_core::util::const_assert_upwards_matches::<180214239366026797331036466594571091968, 190848063332306124314266923076813848576>::{constant#0}` failed here
   |
  ::: $WORKSPACE/core/src/util.rs
   |
