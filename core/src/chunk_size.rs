@@ -20,14 +20,14 @@ macro_rules! attempt {
     };
 }
 
-pub(crate) trait ChunkSize: Copy + fmt::Debug {
+pub(crate) trait ChunkLayout: Copy + fmt::Debug {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout>;
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ChunkSizeDefault;
 
-impl ChunkSize for ChunkSizeDefault {
+impl ChunkLayout for ChunkSizeDefault {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         Some(Constants::<C, A>::DEFAULT_LAYOUT)
     }
@@ -42,7 +42,7 @@ impl ChunkSizeHint {
     }
 }
 
-impl ChunkSize for ChunkSizeHint {
+impl ChunkLayout for ChunkSizeHint {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
         let hint = self.0;
@@ -63,7 +63,7 @@ impl ChunkSizeCapacity {
     }
 }
 
-impl ChunkSize for ChunkSizeCapacity {
+impl ChunkLayout for ChunkSizeCapacity {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         self.to_hint::<C, A>()?.layout::<C, A>()
     }
@@ -72,7 +72,7 @@ impl ChunkSize for ChunkSizeCapacity {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ChunkSizeCapacityFirst(pub(crate) Layout);
 
-impl ChunkSize for ChunkSizeCapacityFirst {
+impl ChunkLayout for ChunkSizeCapacityFirst {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
         let hint =

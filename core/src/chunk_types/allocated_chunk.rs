@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     bumping::MIN_CHUNK_ALIGN,
-    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
+    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
     config::{BumpConfig, config},
     error_mode::ErrorMode,
     polyfill::non_null,
@@ -210,7 +210,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
     }
 
     #[inline(always)]
-    pub(crate) fn new_first<E: ErrorMode, A: Allocator>(chunk_size: impl ChunkSize, allocator: &A) -> Result<Self, E> {
+    pub(crate) fn new_first<E: ErrorMode, A: Allocator>(chunk_size: impl ChunkLayout, allocator: &A) -> Result<Self, E> {
         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
         Self::new_chunk_with_layout(chunk_layout, None, allocator)
     }

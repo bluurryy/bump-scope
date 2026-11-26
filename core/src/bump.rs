@@ -10,7 +10,7 @@ use crate::{
     ErrorMode,
     base_allocator_storage::BaseAllocatorStorage,
     bump_scope::BumpScope,
-    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeDefault, ChunkSizeHint},
+    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSizeDefault, ChunkSizeHint},
     chunk_types::{AllocatedChunk, Chunk},
     config::{BumpConfig, config},
     destructure::destructure,
@@ -157,7 +157,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     }
 
     #[inline(always)]
-    fn allocated_new<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
+    fn allocated_new<E: ErrorMode>(size: impl ChunkLayout, allocator: A) -> Result<Self, E> {
         Ok(Self {
             scope: BumpScope {
                 chunk: Cell::new(Chunk::from_allocated(AllocatedChunk::new_first::<E, A>(size, &allocator)?)),
