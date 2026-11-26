@@ -1,7 +1,7 @@
 error[E0597]: `guard` does not live long enough
   --> trybuild/compile_fail/escape_scope/by_allocator_replacement.rs:10:21
    |
- 9 |         let mut guard = bump.scope_guard();
+ 9 |         let mut guard = bump.begin_scope();
    |             --------- binding `guard` declared here
 10 |         let scope = guard.scope();
    |                     ^^^^^ borrowed value does not live long enough

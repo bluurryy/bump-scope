@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** `bump-scope` becomes dependent on the `alloc` crate (`bump-scope-core` does not)
+- **Breaking:** Rename `.scope_guard()` to `.begin_scope()`
 - **Breaking:** Moved the `alloc_*` methods from `Bump(Scope)` to the `BumpAllocator` trait
 - **Breaking:** Change `alloc_*` methods to now return a `BumpAllocation<T, &Self>` type instead of `BumpBox<'_, T>`
 - **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic

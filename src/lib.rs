@@ -94,7 +94,7 @@
 //! You can create scopes to make allocations that live only for a part of its parent scope.
 //! Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 //!
-//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
+//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`begin_scope`](Bump::begin_scope):
 //! ```
 //! use bump_scope::{Bump, BumpAllocator};
 //!
@@ -120,14 +120,14 @@
 //!
 //! // or you can use scope guards
 //! {
-//!     let mut guard = bump.scope_guard();
+//!     let mut guard = bump.begin_scope();
 //!     let mut bump = guard.scope();
 //!
 //!     let hello = bump.alloc_str("hello").into_ref();
 //!     assert_eq!(bump.allocated(), 5);
 //!
 //!     {
-//!         let mut guard = bump.scope_guard();
+//!         let mut guard = bump.begin_scope();
 //!         let bump = guard.scope();
 //!
 //!         let world = bump.alloc_str("world").into_ref();
@@ -163,7 +163,7 @@
 //! # Collections and Scopes
 //!
 //! When using a `Bump(Scope)` as an allocator for a collection you will find that you can no longer
-//! call `scoped` or `scope_guard` since those functions require `&mut self` which does not allow
+//! call `scoped` or `begin_scope` since those functions require `&mut self` which does not allow
 //! any outstanding references to the allocator.
 //!
 //! ```compile_fail,E0502
@@ -180,7 +180,7 @@
 //! ```
 //!
 //! As a workaround you can use the [`claim`] method on `&Bump(Scope)` to return a `BumpClaimGuard` which
-//! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.scope_guard()`.
+//! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.begin_scope()`.
 //!
 //! A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`
 //! is live. This dummy allocator errors when trying to allocate or grow memory and reports an empty bump allocator from the `stats` api.
@@ -240,7 +240,7 @@
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
 //! [`scoped`]: crate::BumpScope::scoped
-//! [`scope_guard`]: crate::BumpScope::scope_guard
+//! [`begin_scope`]: crate::BumpScope::begin_scope
 //! [`claim`]: crate::BumpScope::claim
 //! [Arenas]: https://donsz.nl/blog/arenas
 //! [bump-scope-core]: bump_scope_core

@@ -6,9 +6,9 @@ use core::{
 
 use crate::{BumpScope, Checkpoint, config::BumpConfig};
 
-/// Returned from [`BumpScope::scope_guard`].
+/// Returned from [`BumpScope::begin_scope`].
 ///
-/// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
+/// [`BumpScope::begin_scope`]: crate::BumpScope::begin_scope
 #[must_use]
 pub struct BumpScopeGuard<'a, const C: BumpConfig, A: Allocator> {
     scope: &'a mut BumpScope<C, A>,

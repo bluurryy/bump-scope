@@ -70,7 +70,7 @@ impl<const C: BumpConfig, A: Allocator> BumpScope<C, A> {
     /// let mut bump: Bump = Bump::new();
     ///
     /// {
-    ///     let mut guard = bump.scope_guard();
+    ///     let mut guard = bump.begin_scope();
     ///     let bump = guard.scope();
     ///     bump.alloc_str("Hello, world!").into_ref();
     ///     assert_eq!(bump.allocated(), 13);
@@ -81,7 +81,7 @@ impl<const C: BumpConfig, A: Allocator> BumpScope<C, A> {
     ///
     /// [claimed]: BumpScope::claim
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
+    pub fn begin_scope(&mut self) -> BumpScopeGuard<'_, C, A> {
         BumpScopeGuard::new(self)
     }
 
@@ -938,7 +938,7 @@ impl<const C: BumpConfig, A: Allocator> BumpScope<C, A> {
 
         // The scope guard will reset the bump pointer to the current position,
         // which is aligned to the current `min_align`.
-        let mut scope = self.scope_guard();
+        let mut scope = self.begin_scope();
         scope.align_to(config!(NEW_C, min_align));
         let scope: &mut BumpScope<C, A> = &mut scope;
         f(unsafe { transmute_mut(scope) })

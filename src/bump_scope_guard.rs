@@ -9,9 +9,9 @@ use bump_scope_core::{
 
 use crate::BumpScope;
 
-/// Returned from [`BumpScope::scope_guard`].
+/// Returned from [`BumpScope::begin_scope`].
 ///
-/// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
+/// [`BumpScope::begin_scope`]: crate::BumpScope::begin_scope
 #[must_use]
 pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
     core: CoreBumpScopeGuard<'a, C, A>,
@@ -34,7 +34,7 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     #[inline(always)]
     pub(crate) fn new(scope: &'a mut BumpScope<'_, C, A>) -> Self {
         Self {
-            core: scope.as_mut().scope_guard(),
+            core: scope.as_mut().begin_scope(),
         }
     }
 

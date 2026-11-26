@@ -234,7 +234,7 @@ up_and_down! {
 
     #[inline(never)]
     pub fn bump_scope_guard(bump: &mut Bump<DEFAULT>) -> BumpScopeGuard<'_, DEFAULT> {
-        bump.scope_guard()
+        bump.begin_scope()
     }
 
     #[inline(never)]

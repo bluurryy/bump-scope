@@ -39,7 +39,7 @@ use crate::error_mode::panic_on_error;
 /// using the `alloc` methods of [`BumpAllocator`], which `Bump` implements.
 ///
 /// # Free memory using ...
-/// - scopes: [`scoped`], [`scope_guard`], [`scoped_with_config`]
+/// - scopes: [`scoped`], [`begin_scope`], [`scoped_with_config`]
 /// - checkpoints: [`checkpoint`], [`reset_to`]
 /// - reset: [`reset`], [`reset_to_start`]
 ///
@@ -97,7 +97,7 @@ use crate::error_mode::panic_on_error;
 ///
 /// [`scoped`]: crate::BumpScope::scoped
 /// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
-/// [`scope_guard`]: crate::BumpScope::scope_guard
+/// [`begin_scope`]: crate::BumpScope::begin_scope
 ///
 /// [`checkpoint`]: crate::traits::BumpAllocator::checkpoint
 /// [`reset_to`]: crate::traits::BumpAllocator::reset_to
@@ -557,10 +557,10 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         self.as_mut_bump_scope().scoped(f)
     }
 
-    /// Forwards to [`BumpScope::scope_guard`].
+    /// Forwards to [`BumpScope::begin_scope`].
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
-        self.as_mut_bump_scope().scope_guard()
+    pub fn begin_scope(&mut self) -> BumpScopeGuard<'_, C, A> {
+        self.as_mut_bump_scope().begin_scope()
     }
 }
 

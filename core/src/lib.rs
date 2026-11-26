@@ -46,7 +46,7 @@
 //! You can create scopes to make allocations that live only for a part of its parent scope.
 //! Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 //!
-//! You can create a new scope with a [`scope_guard`]:
+//! You can create a new scope with a [`begin_scope`]:
 //! ```
 //! # extern crate alloc;
 //! use alloc::alloc::{Global, Layout};
@@ -58,13 +58,13 @@
 //! let mut bump = Bump::new_in(Global)?;
 //!
 //! {
-//!     let mut bump = bump.scope_guard();
+//!     let mut bump = bump.begin_scope();
 //!     let two = bump.alloc_sized::<!, [u8; 2]>()?;
 //!     # _ = two;
 //!     assert_eq!(bump.allocated(), 2);
 //!
 //!     {
-//!         let mut bump = bump.scope_guard();
+//!         let mut bump = bump.begin_scope();
 //!         let three = bump.alloc_sized::<!, [u8; 3]>();
 //!         # _ = three;
 //!         assert_eq!(bump.allocated(), 5);
@@ -101,7 +101,7 @@
 //! # Collections and Scopes
 //!
 //! When using a `Bump(Scope)` as an allocator for a collection you will find that you can no longer
-//! call `scope_guard` since it requires `&mut self` which does not allow any outstanding references
+//! call `begin_scope` since it requires `&mut self` which does not allow any outstanding references
 //! to the allocator.
 //!
 //! ```compile_fail,E0502
@@ -115,7 +115,7 @@
 //! let vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 //!
 //! {
-//!     let bump = bump.scope_guard();
+//!     let bump = bump.begin_scope();
 //!     # _ = bump;
 //!     // ...
 //! }
@@ -124,7 +124,7 @@
 //! ```
 //!
 //! As a workaround you can use the [`claim`] method on `&Bump(Scope)` to return a `BumpClaimGuard` which
-//! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.scope_guard()`.
+//! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.begin_scope()`.
 //!
 //! A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`
 //! is live. This dummy allocator errors when trying to allocate or grow memory and reports an empty bump allocator from the `stats` api.
@@ -143,7 +143,7 @@
 //!
 //! {
 //!     let mut guard = bump.claim();
-//!     let mut bump_scope = guard.scope_guard();
+//!     let mut bump_scope = guard.begin_scope();
 //!
 //!     // you can allocate in the scope as usual
 //!     let mut vec2: Vec<u8, &BumpScope> = Vec::new_in(&bump_scope);
@@ -169,7 +169,7 @@
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/benches
 //! [`claim`]: BumpScope::claim
 //! [`checkpoint`]: BumpScope::checkpoint
-//! [`scope_guard`]: BumpScope::scope_guard
+//! [`begin_scope`]: BumpScope::begin_scope
 //! [bump-scope]: https://docs.rs/bump-scope
 
 #[cfg(feature = "alloc")]

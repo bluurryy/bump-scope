@@ -14,6 +14,6 @@ up_and_down! {
         assert_eq!(size_of::<[usize; 4]>(), MyBump::with_size(1).stats().size());
         assert_eq!(size_of::<[usize; 8]>(), MyBump::with_capacity(std::alloc::Layout::new::<u8>()).stats().size());
         assert_eq!(4096, MyBump::with_size(4096).stats().size());
-        assert_eq!(4096, MyBump::new().scope_guard().scope().by_value().stats().size());
+        assert_eq!(4096, MyBump::new().begin_scope().scope().by_value().stats().size());
     }
 }

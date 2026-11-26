@@ -28,7 +28,7 @@ up_and_down! {
     }
 
     #[test]
-    fn scope_guard() {
+    fn begin_scope() {
         let bump = Bump::<C>::new();
 
         let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
@@ -38,7 +38,7 @@ up_and_down! {
 
         {
             let mut guard = bump.claim();
-            let mut guard = guard.scope_guard();
+            let mut guard = guard.begin_scope();
             let bump = guard.scope();
 
             let mut both = Vec::new_in(&bump);
@@ -63,12 +63,12 @@ up_and_down! {
     fn enter_scope_on_claimed() {
         fn inner() {
             let mut bump = Bump::<C>::new();
-            let mut guard = bump.scope_guard();
+            let mut guard = bump.begin_scope();
             let mut scope = guard.scope().by_value();
             forget(scope.claim());
 
             {
-                let _guard = scope.scope_guard();
+                let _guard = scope.begin_scope();
                 // this will call `reset_to` with a checkpoint from the claimed dummy chunk
                 // this mustn't try to actually reset within the claimed chunk as that would trigger a data race here
             }
@@ -84,7 +84,7 @@ up_and_down! {
             let mut bump = Bump::<C>::new();
 
             {
-                let mut guard = bump.scope_guard();
+                let mut guard = bump.begin_scope();
                 let scope = guard.scope();
                 forget(scope.claim());
                 // this will call `reset_to` on a claimed bump allocator

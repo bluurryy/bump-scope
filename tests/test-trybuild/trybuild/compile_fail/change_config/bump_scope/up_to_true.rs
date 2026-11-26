@@ -12,7 +12,7 @@ fn convert(bump: BumpScope<IN>) -> BumpScope<OUT> {
 
 fn main() {
     let mut input = Bump::<IN>::new();
-    let mut guard = input.scope_guard();
+    let mut guard = input.begin_scope();
     let output = convert(guard.scope().by_value());
     let test = output.alloc_str("test").into_ref();
     println!("{test}");

@@ -6,7 +6,7 @@ fn escape_by_allocator_replacement(bump: &mut Bump) {
     let unshackled;
 
     {
-        let mut guard = bump.scope_guard();
+        let mut guard = bump.begin_scope();
         let scope = guard.scope();
 
         let boxed = scope.alloc(3i32).into_box();

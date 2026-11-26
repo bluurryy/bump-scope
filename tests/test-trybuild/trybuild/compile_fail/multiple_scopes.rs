@@ -6,7 +6,7 @@ fn multiple_scopes(bump: &mut Bump) {
         scope.alloc_str("foo").into_ref()
     }
 
-    let mut guard = bump.scope_guard();
+    let mut guard = bump.begin_scope();
 
     let a = use_scope(guard.scope());
     let b = use_scope(guard.scope());

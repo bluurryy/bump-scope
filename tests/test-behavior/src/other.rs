@@ -115,14 +115,14 @@ up_and_down! {
         let mut bump = Bump::<C>::new();
 
         {
-            let mut child_guard = bump.scope_guard();
+            let mut child_guard = bump.begin_scope();
             let child_scope = child_guard.scope();
 
             let child_0 = child_scope.alloc_str("child_0").into_boxu();
             let child_1 = child_scope.alloc_str("child_1").into_boxu();
 
             {
-                let mut grand_child_guard = child_scope.scope_guard();
+                let mut grand_child_guard = child_scope.begin_scope();
                 let grand_child_scope = grand_child_guard.scope();
 
                 let grand_child_0 = grand_child_scope.alloc_str("grand_child_0").into_boxu();
