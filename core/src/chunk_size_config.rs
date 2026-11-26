@@ -38,7 +38,7 @@ impl ChunkSizeConfig {
     /// because we need the size to [fit] the allocated memory block.
     /// (The size must be between the original requested size and the size the allocator actually returned.)
     ///
-    /// The `calc_size_from_hint` always returns a size that is a multiple of the chunk header alignment
+    /// The `calc_layout_size` always returns a size that is a multiple of the chunk header alignment
     /// and `MIN_CHUNK_ALIGN`, so this downwards aligning cannot result in a size smaller than the requested one.
     ///
     /// [fit]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
@@ -59,18 +59,18 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub(crate) const fn calc_size_from_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
+    pub(crate) const fn calc_layout_size(self, size: usize) -> Option<NonZeroUsize> {
         let Self { chunk_header_layout, .. } = self;
 
         let min = chunk_header_layout.pad_to_align().size();
         let size_step = max(ASSUMED_PAGE_SIZE, chunk_header_layout.align());
-        let size_hint = max(size_hint, min);
+        let size = max(size, min);
 
-        let size = attempt!(if size_hint < size_step {
+        let size = attempt!(if size < size_step {
             // the name is misleading, this will return `size` if it is already a power of two
-            size_hint.checked_next_power_of_two()
+            size.checked_next_power_of_two()
         } else {
-            up_align(size_hint, size_step)
+            up_align(size, size_step)
         });
 
         debug_assert!(size % chunk_header_layout.align() == 0);
@@ -86,14 +86,14 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub(crate) const fn calc_hint_from_capacity(self, layout: Layout) -> Option<usize> {
+    pub(crate) const fn calc_size_from_capacity(self, layout: Layout) -> Option<usize> {
         let maximum_required_padding = layout.align().saturating_sub(MIN_CHUNK_ALIGN);
         let required_size = attempt!(layout.size().checked_add(maximum_required_padding));
-        self.calc_hint_from_capacity_bytes(required_size)
+        self.calc_size_from_capacity_bytes(required_size)
     }
 
     #[inline(always)]
-    pub(crate) const fn calc_hint_from_capacity_bytes(self, bytes: usize) -> Option<usize> {
+    pub(crate) const fn calc_size_from_capacity_bytes(self, bytes: usize) -> Option<usize> {
         let Self {
             up, chunk_header_layout, ..
         } = self;

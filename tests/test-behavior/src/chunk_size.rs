@@ -90,19 +90,19 @@ up_and_down! {
     }
 
     #[test]
-    fn minimum_size() {
+    fn default_size() {
         let bump = Bump::<C_SIZE_1024>::new();
         assert_eq!(bump.stats().size(), 1024);
     }
 
     #[test]
-    fn minimum_size_smaller_hint() {
+    fn default_size_smaller() {
         let bump = Bump::<C_SIZE_1024>::with_size(0);
         assert_eq!(bump.stats().size(), size_of::<[usize;4]>());
     }
 
     #[test]
-    fn minimum_size_bigger_hint() {
+    fn default_size_bigger() {
         let bump = Bump::<C_SIZE_1024>::with_size(2048);
         assert_eq!(bump.stats().size(), 2048);
     }

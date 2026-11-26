@@ -49,7 +49,7 @@ note: erroneous constant encountered
 note: erroneous constant encountered
  --> $WORKSPACE/core/src/chunk_size.rs
   |
-  |         let size = match Self::CONFIG.calc_size_from_hint(config!(default_initial_chunk_size)) {
+  |         let size = match Self::CONFIG.calc_layout_size(config!(default_initial_chunk_size)) {
   |                          ^^^^^^^^^^^^
 
 note: erroneous constant encountered
@@ -58,7 +58,7 @@ note: erroneous constant encountered
   |         Some(Constants::<C, A>::DEFAULT_LAYOUT)
   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn <bump_scope_core::chunk_size::ChunkSizeDefault as bump_scope_core::chunk_size::ChunkSize>::layout::<1, std::alloc::Global>`
+note: the above error was encountered while instantiating `fn <bump_scope_core::chunk_size::ChunkSizeDefault as bump_scope_core::chunk_size::ChunkLayout>::layout::<1, std::alloc::Global>`
  --> $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
   |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
@@ -661,18 +661,18 @@ note: erroneous constant encountered
 note: erroneous constant encountered
  --> $WORKSPACE/core/src/chunk_size.rs
   |
-  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |             attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0)).max(config!(default_initial_chunk_size));
   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0080]: evaluation panicked: invalid bump config
  --> $WORKSPACE/core/src/config.rs
   |
   |         const { $crate::config::read::$name(C) }
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope::bump_scope_core::chunk_size::ChunkSize>::layout::<1, std::alloc::Global>::{constant#0}` failed inside this call
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `<bump_scope::bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope::bump_scope_core::chunk_size::ChunkLayout>::layout::<1, std::alloc::Global>::{constant#0}` failed inside this call
   |
  ::: $WORKSPACE/core/src/chunk_size.rs
   |
-  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |             attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0)).max(config!(default_initial_chunk_size));
   |                                                                                     ----------------------------------- in this macro invocation
   |
 note: inside `default_initial_chunk_size`
@@ -707,12 +707,12 @@ note: erroneous constant encountered
   |
  ::: $WORKSPACE/core/src/chunk_size.rs
   |
-  |             attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+  |             attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0)).max(config!(default_initial_chunk_size));
   |                                                                                     ----------------------------------- in this macro invocation
   |
   = note: this note originates in the macro `config` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-note: the above error was encountered while instantiating `fn <bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope_core::chunk_size::ChunkSize>::layout::<1, std::alloc::Global>`
+note: the above error was encountered while instantiating `fn <bump_scope_core::chunk_size::ChunkSizeCapacityFirst as bump_scope_core::chunk_size::ChunkLayout>::layout::<1, std::alloc::Global>`
  --> $WORKSPACE/core/src/chunk_types/allocated_chunk.rs
   |
   |         let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
@@ -927,8 +927,8 @@ note: the above error was encountered while instantiating `fn bump_scope_core::c
 note: erroneous constant encountered
  --> $WORKSPACE/core/src/chunk_size.rs
   |
-  |             Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         Some(ChunkSize(attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0))))
+  |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 note: erroneous constant encountered
  --> $WORKSPACE/core/src/chunk_size.rs

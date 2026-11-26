@@ -46,7 +46,7 @@ impl ChunkLayout for ChunkSize {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
         let hint = self.0;
-        let size = attempt!(config.calc_size_from_hint(hint)).get();
+        let size = attempt!(config.calc_layout_size(hint)).get();
         let align = AllocatedChunk::<C>::HEADER_LAYOUT.align();
         Layout::from_size_align(size, align).ok()
     }
@@ -57,7 +57,7 @@ pub(crate) struct ChunkSizeCapacity(pub(crate) Layout);
 
 impl ChunkSizeCapacity {
     pub(crate) const fn to_hint<const C: BumpConfig, A>(self) -> Option<ChunkSize> {
-        Some(ChunkSize(attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0))))
+        Some(ChunkSize(attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0))))
     }
 }
 
@@ -74,8 +74,8 @@ impl ChunkLayout for ChunkSizeCapacityFirst {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
         let hint =
-            attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)).max(config!(default_initial_chunk_size));
-        let size = attempt!(config.calc_size_from_hint(hint)).get();
+            attempt!(Constants::<C, A>::CONFIG.calc_size_from_capacity(self.0)).max(config!(default_initial_chunk_size));
+        let size = attempt!(config.calc_layout_size(hint)).get();
         let align = AllocatedChunk::<C>::HEADER_LAYOUT.align();
         Layout::from_size_align(size, align).ok()
     }
@@ -90,7 +90,7 @@ impl<const C: BumpConfig, A> Constants<C, A> {
     };
 
     const DEFAULT_LAYOUT: Layout = {
-        let size = match Self::CONFIG.calc_size_from_hint(config!(default_initial_chunk_size)) {
+        let size = match Self::CONFIG.calc_layout_size(config!(default_initial_chunk_size)) {
             Some(some) => some.get(),
             None => panic!("failed to calculate minimum chunk size"),
         };

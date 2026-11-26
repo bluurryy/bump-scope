@@ -98,7 +98,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
         Self::allocated_new(ChunkSizeDefault, allocator)
     }
 
-    /// Constructs a new `Bump` with a size hint for the first chunk.
+    /// Constructs a new `Bump` with a size for the first chunk.
     ///
     /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in) instead.
     ///

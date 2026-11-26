@@ -43,7 +43,7 @@ pub struct Fuzz {
     pointer_width: PointerWidth,
     base_allocator_layout: ArbitraryLayout,
     base_allocator: PseudoAllocator,
-    size_hint_or_capacity: SizeHintOrCapacity,
+    size_hint_or_capacity: SizeOrCapacity,
 }
 
 impl Fuzz {
@@ -53,7 +53,7 @@ impl Fuzz {
             pointer_width,
             base_allocator_layout,
             base_allocator,
-            size_hint_or_capacity,
+            size_hint_or_capacity: size_or_capacity,
         } = self;
 
         let config = ChunkSizeConfig {
@@ -69,14 +69,14 @@ impl Fuzz {
             },
         };
 
-        let size_hint = match size_hint_or_capacity {
-            SizeHintOrCapacity::SizeHint(size_hint) => Some(size_hint),
-            SizeHintOrCapacity::Capacity(layout) => config.calc_hint_from_capacity(layout.get()),
+        let size = match size_or_capacity {
+            SizeOrCapacity::Size(size) => Some(size),
+            SizeOrCapacity::Capacity(layout) => config.calc_size_from_capacity(layout.get()),
         };
 
-        let Some(size_hint) = size_hint else { return };
+        let Some(size) = size else { return };
 
-        let Some(size) = config.calc_size_from_hint(size_hint) else {
+        let Some(size) = config.calc_layout_size(size) else {
             return;
         };
 
@@ -118,7 +118,7 @@ impl Fuzz {
             assert!(size.is_multiple_of(config.chunk_header_layout.align()));
         }
 
-        if let SizeHintOrCapacity::Capacity(required_capacity_layout) = size_hint_or_capacity {
+        if let SizeOrCapacity::Capacity(required_capacity_layout) = size_or_capacity {
             let content_start: usize;
             let content_end: usize;
 
@@ -180,16 +180,16 @@ struct PseudoAllocation {
 }
 
 #[derive(Arbitrary, Clone, Copy)]
-enum SizeHintOrCapacity {
-    SizeHint(usize),
+enum SizeOrCapacity {
+    Size(usize),
     Capacity(ArbitraryLayout),
 }
 
-impl fmt::Debug for SizeHintOrCapacity {
+impl fmt::Debug for SizeOrCapacity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SizeHint(arg0) => f.debug_tuple("SizeHintOrCapacity::SizeHint").field(arg0).finish(),
-            Self::Capacity(arg0) => f.debug_tuple("SizeHintOrCapacity::Capacity").field(arg0).finish(),
+            Self::Size(arg0) => f.debug_tuple("SizeOrCapacity::Size").field(arg0).finish(),
+            Self::Capacity(arg0) => f.debug_tuple("SizeOrCapacity::Capacity").field(arg0).finish(),
         }
     }
 }

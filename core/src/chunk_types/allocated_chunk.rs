@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     bumping::MIN_CHUNK_ALIGN,
-    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSize, align_allocation_size},
+    chunk_size::{ChunkLayout, ChunkSize, ChunkSizeCapacity, align_allocation_size},
     config::{BumpConfig, config},
     error_mode::ErrorMode,
     polyfill::non_null,
