@@ -34,15 +34,15 @@ impl ChunkLayout for ChunkSizeDefault {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ChunkSizeHint(pub(crate) usize);
+pub(crate) struct ChunkSize(pub(crate) usize);
 
-impl ChunkSizeHint {
+impl ChunkSize {
     pub const fn max(self, other: Self) -> Self {
         if self.0 > other.0 { self } else { other }
     }
 }
 
-impl ChunkLayout for ChunkSizeHint {
+impl ChunkLayout for ChunkSize {
     fn layout<const C: BumpConfig, A>(self) -> Option<Layout> {
         let config = Constants::<C, A>::CONFIG;
         let hint = self.0;
@@ -56,10 +56,8 @@ impl ChunkLayout for ChunkSizeHint {
 pub(crate) struct ChunkSizeCapacity(pub(crate) Layout);
 
 impl ChunkSizeCapacity {
-    pub(crate) const fn to_hint<const C: BumpConfig, A>(self) -> Option<ChunkSizeHint> {
-        Some(ChunkSizeHint(attempt!(
-            Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0)
-        )))
+    pub(crate) const fn to_hint<const C: BumpConfig, A>(self) -> Option<ChunkSize> {
+        Some(ChunkSize(attempt!(Constants::<C, A>::CONFIG.calc_hint_from_capacity(self.0))))
     }
 }
 

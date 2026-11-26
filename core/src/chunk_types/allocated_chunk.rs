@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     bumping::MIN_CHUNK_ALIGN,
-    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
+    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSize, align_allocation_size},
     config::{BumpConfig, config},
     error_mode::ErrorMode,
     polyfill::non_null,
@@ -226,7 +226,7 @@ impl<const C: BumpConfig> AllocatedChunk<C> {
         let required_size = ChunkSizeCapacity(layout).to_hint::<C, A>().ok_or_else(E::capacity_overflow)?;
 
         let grown_size = match prev.size().get().checked_mul(2) {
-            Some(size) => ChunkSizeHint(size),
+            Some(size) => ChunkSize(size),
             None => return Err(E::capacity_overflow()),
         };
 

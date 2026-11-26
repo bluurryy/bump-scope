@@ -10,7 +10,7 @@ use crate::{
     ErrorMode,
     base_allocator_storage::BaseAllocatorStorage,
     bump_scope::BumpScope,
-    chunk_size::{ChunkLayout, ChunkSizeCapacity, ChunkSizeDefault, ChunkSizeHint},
+    chunk_size::{ChunkLayout, ChunkSize, ChunkSizeCapacity, ChunkSizeDefault},
     chunk_types::{AllocatedChunk, Chunk},
     config::{BumpConfig, config},
     destructure::destructure,
@@ -128,7 +128,7 @@ impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// ```
     #[inline(always)]
     pub fn with_size_in<E: ErrorMode>(size: usize, allocator: A) -> Result<Self, E> {
-        Self::allocated_new(ChunkSizeHint(size), allocator)
+        Self::allocated_new(ChunkSize(size), allocator)
     }
 
     /// Constructs a new `Bump` with at least enough space for `layout`.
