@@ -68,8 +68,12 @@ where
             let remaining_len = len - range_len;
 
             vec.set_len(remaining_len);
-            // TODO: what capacity do we provide for zst? does it even matter?
-            return Vec::from_raw_parts_in(ptr::dangling_mut(), range_len, range_len, alloc);
+
+            // capacity of zst vectors is always usize::MAX
+            // see https://doc.rust-lang.org/stable/std/vec/struct.Vec.html#method.capacity
+            let capacity = usize::MAX;
+
+            return Vec::from_raw_parts_in(ptr::dangling_mut(), range_len, capacity, alloc);
         }
 
         if end == len {
